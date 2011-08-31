@@ -1,0 +1,16 @@
+*~
+.~lock.*#
+*.backup
+*.old
+*.aux
+*.blg
+*.bbl
+*.bib.bak
+.directory
+bin/
+gen/
+donate/bin
+donate/gen
+local.properties
+build.properties
+
