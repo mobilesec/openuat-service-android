@@ -16,6 +16,7 @@ import org.openuat.channel.main.ip.TCPPortServer;
 import org.openuat.channel.main.ip.UDPMulticastSocket;
 import org.openuat.sensors.TimeSeriesAggregator;
 import org.openuat.sensors.android.AndroidAccelerometerSource;
+import org.openuat.service.IDeviceAuthenticator;
 
 import android.app.Service;
 import android.content.Intent;
@@ -53,7 +54,7 @@ public class WifiService extends Service implements MessageListener, Authenticat
 	/**
 	 * Binds the Service with the client application over the AIDL- File.
 	 */
-	private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
+	private final IDeviceAuthenticator.Stub mBinder = new IDeviceAuthenticator.Stub() {
 		/**
 		 * Here comes the output from the client application and will be send to the other Device.
 		 * 
