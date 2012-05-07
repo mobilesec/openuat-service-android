@@ -11,6 +11,7 @@ package org.openuat.apps.android;
 
 import java.io.IOException;
 
+import org.openuat.android.R;
 import org.openuat.authentication.AuthenticationProgressHandler;
 import org.openuat.authentication.HostProtocolHandler;
 import org.openuat.channel.main.bluetooth.android.AndroidRFCOMMChannel;

@@ -8,6 +8,8 @@
  */
 package org.openuat.apps.android;
 
+import org.openuat.android.R;
+
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;

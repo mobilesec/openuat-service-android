@@ -1,0 +1,5 @@
+package org.openuat.android.service.interfaces;
+
+oneway interface IReceiverCallback {
+	void receive(in byte[] data);
+} 

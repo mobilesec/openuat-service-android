@@ -1,0 +1,16 @@
+package org.openuat.android.service.interfaces;
+
+import org.openuat.android.service.interfaces.IReceiverCallback;
+
+interface ISecureChannel {
+    /** Send data to other device */
+    boolean send(in byte[] data);
+    
+    /** Blocking receive of data from the other device. */
+    byte[] receive();
+     
+    /** Register for asynchronously receiving data from the other device. */
+    void registerReceiveHandler(IReceiverCallback receiver);
+    
+    void unregisterReceiveHandler(IReceiverCallback receiver);
+}

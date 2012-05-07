@@ -8,6 +8,8 @@
  */
 package org.openuat.apps.android;
 
+import org.openuat.android.R;
+
 import android.app.Activity;
 import android.os.Bundle;
 

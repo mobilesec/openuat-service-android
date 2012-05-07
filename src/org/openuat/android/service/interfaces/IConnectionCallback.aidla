@@ -1,0 +1,7 @@
+package org.openuat.android.service.interfaces;
+
+import org.openuat.android.service.interfaces.ISecureChannel;
+
+interface IConnectionCallback {
+	void connectionIncoming(in ISecureChannel connection);
+} 
