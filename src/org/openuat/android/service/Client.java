@@ -178,7 +178,6 @@ public class Client implements IVerificationStatusListener {
      */
     public void setConnection(final SecureChannel channel) {
 	secureChannel = channel;
-	secureChannel.setVerificationStatusListener(this);
     }
 
     /*

@@ -93,10 +93,32 @@ public final class TCPPortServerHandler {
 		    c = new Client();
 		    c.setAdress(toRemote);
 		}
-		// chan.setSessionKey(sharedSessionKey);
-		// chan.setOobKey(sharedOObMsg);
+		// TODO #####
 		chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
 		c.setConnection(chan);
+		chan.setOobKey(sharedAuthenticationKey);
+		chan.setVerificationStatusListener(new IVerificationStatusListener() {
+
+		    String app2 = app.toString();
+
+		    @Override
+		    public void onVerificationStatusChanged(
+			    VERIFICATION_STATUS newStatus) {
+			switch (newStatus) {
+			case VERIFICATION_FAILED:
+			    verificationFailure(true, c.getAdress(),
+				    app.toString(), app.toString(),
+				    new Exception(), "verification failed");
+			    break;
+			case VERIFICATION_PENDING:
+			    break;
+			case VERIFICATION_SUCCESS:
+			    break;
+			default:
+			    break;
+			}
+		    }
+		});
 
 	    } catch (final IOException e) {
 		// AuthenticationFailure(sender, remote, e, e.getMessage());

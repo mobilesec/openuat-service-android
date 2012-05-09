@@ -70,27 +70,6 @@ public class Util {
 	    Log.i("ip by android:", "fail");
 	    e.printStackTrace();
 	}
-
-	// try {
-	// for (final Enumeration<NetworkInterface> en = NetworkInterface
-	// .getNetworkInterfaces(); en.hasMoreElements();) {
-	// final NetworkInterface intf = en.nextElement();
-	// for (final Enumeration<InetAddress> enumIpAddr = intf
-	// .getInetAddresses(); enumIpAddr.hasMoreElements();) {
-	// final InetAddress inetAddress = enumIpAddr.nextElement();
-	// if (!inetAddress.isLoopbackAddress()) {
-	//
-	// if (inetAddress instanceof Inet4Address) {
-	// return (Inet4Address) inetAddress;
-	// }
-	//
-	// }
-	// }
-	// }
-	// } catch (final SocketException ex) {
-	// Log.e("Socket exception in GetIP Address of Utilities",
-	// ex.toString());
-	// }
 	return localhost;
     }
 }
