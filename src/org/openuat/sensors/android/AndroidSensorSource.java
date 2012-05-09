@@ -65,14 +65,17 @@ public class AndroidSensorSource extends SamplesSource implements SensorEventLis
 	@Override
 	public org.openuat.sensors.TimeSeries_Int.Parameters getParameters_Int() {
 		return new TimeSeries_Int.Parameters() {
+			@Override
 			public int getMultiplicator() {
 				return 2;
 			}
 
+			@Override
 			public int getDivisor() {
 				return 1;
 			}
 
+			@Override
 			public int getOffset() {
 				return 0;
 			}

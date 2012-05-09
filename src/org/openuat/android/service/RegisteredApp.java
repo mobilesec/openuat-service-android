@@ -9,7 +9,6 @@
  */
 package org.openuat.android.service;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 
 import org.openuat.android.service.connectiontype.IConnectionType;
@@ -115,10 +114,10 @@ public class RegisteredApp {
     // final String recMessage) {
     //
     // }
-    public Client getClientByAdress(final InetAddress adress) {
-	Log.d(this.toString(), "getClientbyIp " + adress.toString());
+    public Client getClientByAdress(final Object object) {
+	Log.d(this.toString(), "getClientbyIp " + object.toString());
 	for (final Client c : mClients) {
-	    if (c.getAdress().equals(adress)) {
+	    if (c.getAdress().equals(object)) {
 		Log.d(this.toString(), "client found " + c.toString());
 		return c;
 	    }

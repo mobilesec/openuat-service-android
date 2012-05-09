@@ -12,14 +12,16 @@ package org.openuat.android.service.connectiontype;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openuat.android.Constants;
 import org.openuat.android.service.Client;
-import org.openuat.android.service.Protocol;
 import org.openuat.android.service.RegisteredApp;
 import org.openuat.android.service.Util;
 import org.openuat.channel.main.MessageListener;
+import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.channel.main.ip.UDPMulticastSocket;
 
 import android.util.Log;
@@ -48,7 +50,7 @@ public final class TCP implements IConnectionType, MessageListener {
 			if (service.isDiscovering()) {
 			    TCP.mUdpMultiSock
 				    .sendMulticast((service.getName()
-					    + Protocol.SEPERATOR + Protocol.DISCOVER_CHALLENGE)
+					    + Constants.SEPERATOR + Constants.DISCOVER_CHALLENGE)
 					    .getBytes());
 			}
 		    }
@@ -94,8 +96,8 @@ public final class TCP implements IConnectionType, MessageListener {
      */
     private TCP() {
 	try {
-	    TCP.mUdpMultiSock = new UDPMulticastSocket(Protocol.UDP_PORT,
-		    Protocol.UDP_PORT, "255.255.255.255");
+	    TCP.mUdpMultiSock = new UDPMulticastSocket(Constants.UDP_PORT,
+		    Constants.UDP_PORT, "255.255.255.255");
 	    TCP.mUdpMultiSock.addIncomingMessageListener(this);
 	    TCP.mUdpMultiSock.startListening();
 	    TCP.mServices = new ArrayList<RegisteredApp>();
@@ -145,7 +147,7 @@ public final class TCP implements IConnectionType, MessageListener {
 	}
 
 	final String[] received = new String(message, offset, length)
-		.split("\\" + Protocol.SEPERATOR);
+		.split("\\" + Constants.SEPERATOR);
 
 	if (received.length < 2) {
 	    Log.i("UDP received", "Message not correct!");
@@ -170,18 +172,24 @@ public final class TCP implements IConnectionType, MessageListener {
 	    // Get corresponding app
 	    if (app.getName().equalsIgnoreCase(recApp)) {
 		// Challenge received? -> respond!
-		if (recControl.equalsIgnoreCase(Protocol.DISCOVER_CHALLENGE)) {
+		if (recControl.equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
 		    try {
 			TCP.mUdpMultiSock
-				.sendTo((app.getName() + Protocol.SEPERATOR + Protocol.DISCOVER_RESPOND)
+				.sendTo((app.getName() + Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
 					.getBytes(), sentFrom);
 		    } catch (final IOException e) {
 			e.printStackTrace();
 		    }
 		} else if (recControl
-			.equalsIgnoreCase(Protocol.DISCOVER_RESPOND)) {
+			.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
 		    final Client c = new Client();
-		    c.setAdress(sentFrom);
+		    try {
+			c.setAdress(new RemoteTCPConnection(new Socket(
+				sentFrom, Constants.TCP_PORT)));
+		    } catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		    }
 		    app.addClient(c);
 		}
 		return;
@@ -215,7 +223,10 @@ public final class TCP implements IConnectionType, MessageListener {
 	try {
 	    // Log.d(this.toString(), message.toString());
 	    TCP.getInstance();
-	    TCP.mUdpMultiSock.sendTo(message.getBytes(), client.getAdress());
+	    if (client.getAdress() instanceof RemoteTCPConnection) {
+		TCP.mUdpMultiSock.sendTo(message.getBytes(),
+			(InetAddress) client.getAdress().getRemoteAddress());
+	    }
 	} catch (final IOException e) {
 	    e.printStackTrace();
 	}

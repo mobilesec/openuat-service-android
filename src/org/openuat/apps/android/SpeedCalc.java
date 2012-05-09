@@ -123,8 +123,10 @@ public class SpeedCalc implements SensorEventListener
 		}
 	}
 
+	@Override
 	public void onAccuracyChanged(Sensor _s, int _accuracy){}
 
+	@Override
 	public void onSensorChanged(SensorEvent _e)
 	{
 		final float[] vals = _e.values;
@@ -145,9 +147,9 @@ public class SpeedCalc implements SensorEventListener
 			{
 				if (m_iG < Globals.n_values)
 				{
-					m_speed_X[m_iG] = (double) m_speed_data[0];
-					m_speed_Y[m_iG] = (double) m_speed_data[1];
-					m_speed_Z[m_iG] = (double) m_speed_data[2];
+					m_speed_X[m_iG] = m_speed_data[0];
+					m_speed_Y[m_iG] = m_speed_data[1];
+					m_speed_Z[m_iG] = m_speed_data[2];
 					m_iG++;
 				}
 			}
@@ -161,9 +163,9 @@ public class SpeedCalc implements SensorEventListener
 			{
 				if (m_iA < Globals.n_values)
 				{
-					m_acc_X[m_iA] = (double) m_acc_data[0];
-					m_acc_Y[m_iA] = (double) m_acc_data[1];
-					m_acc_Z[m_iA] = (double) m_acc_data[2];
+					m_acc_X[m_iA] = m_acc_data[0];
+					m_acc_Y[m_iA] = m_acc_data[1];
+					m_acc_Z[m_iA] = m_acc_data[2];
 					m_iA++;
 				}
 			}
@@ -177,9 +179,9 @@ public class SpeedCalc implements SensorEventListener
 			{
 				if (m_iM < Globals.n_values / 2)
 				{
-					m_mag_X[m_iM] = (double) m_mag_data[0];
-					m_mag_Y[m_iM] = (double) m_mag_data[1];
-					m_mag_Z[m_iM] = (double) m_mag_data[2];
+					m_mag_X[m_iM] = m_mag_data[0];
+					m_mag_Y[m_iM] = m_mag_data[1];
+					m_mag_Z[m_iM] = m_mag_data[2];
 					m_iM++;
 				}
 			}

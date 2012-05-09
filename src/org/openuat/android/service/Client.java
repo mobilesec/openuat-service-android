@@ -10,9 +10,7 @@
 package org.openuat.android.service;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.Socket;
 
 import org.openuat.android.Constants;
 import org.openuat.android.R;
@@ -20,7 +18,7 @@ import org.openuat.android.service.SecureChannel.VERIFICATION_STATUS;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.authentication.AuthenticationProgressHandler;
 import org.openuat.authentication.HostProtocolHandler;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
+import org.openuat.channel.main.RemoteConnection;
 import org.openuat.util.Hash;
 
 import android.app.Notification;
@@ -36,7 +34,7 @@ import android.util.Log;
  */
 public class Client implements IVerificationStatusListener {
 
-    private Inet4Address adress = null;
+    private RemoteConnection socket = null;
     private SecureChannel secureChannel = null;
     private IConnectionCallback connectionCallback = null;
     private boolean isLocalClient = false;
@@ -47,11 +45,18 @@ public class Client implements IVerificationStatusListener {
     public Client() {
     }
 
-    public Client(Inet4Address adress, IConnectionCallback connectionCallback) {
-	this.adress = adress;
+    public Client(RemoteConnection adress,
+	    IConnectionCallback connectionCallback) {
+	this.socket = adress;
 	this.connectionCallback = connectionCallback;
-	isLocalClient = adress.getHostAddress().equalsIgnoreCase(
-		Util.getipAddress().getHostAddress());
+	try {
+	    isLocalClient = ((InetAddress) adress.getRemoteAddress())
+		    .toString().equalsIgnoreCase(
+			    Util.getipAddress().getHostAddress());
+	} catch (IOException e) {
+	    isLocalClient = false;
+	    e.printStackTrace();
+	}
 
     }
 
@@ -115,7 +120,6 @@ public class Client implements IVerificationStatusListener {
 	    DiscoverService.mNotificationManager.notify(
 		    Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
 
-	    
 	    // TODO get from partner when verification was succesfull!
 	    secureChannel
 		    .setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
@@ -127,8 +131,8 @@ public class Client implements IVerificationStatusListener {
      * 
      * @return the adress
      */
-    public InetAddress getAdress() {
-	return adress;
+    public RemoteConnection getAdress() {
+	return socket;
     }
 
     /**
@@ -140,20 +144,16 @@ public class Client implements IVerificationStatusListener {
      */
     public SecureChannel openConnection() throws IOException {
 	Log.d(this.toString(), "openConnection");
-	Log.d(this.toString(), adress.toString());
+	Log.d(this.toString(), socket.toString());
 
 	if ((secureChannel != null)
 		&& secureChannel.getVerificationStatus() == VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
 	    return secureChannel;
 	}
-	RemoteTCPConnection remoteTcp = null;
-
 	Log.d(this.toString(), "opening sockets");
-	remoteTcp = new RemoteTCPConnection(new Socket(adress,
-		Protocol.TCP_PORT));
 
-	secureChannel = new SecureChannel(remoteTcp);
-	HostProtocolHandler.startAuthenticationWith(remoteTcp,
+	secureChannel = new SecureChannel(socket);
+	HostProtocolHandler.startAuthenticationWith(socket,
 		authenticationHandler, -1, true, RegisteredAppManager
 			.getServiceOfClient(this).getName(), true);
 	return secureChannel;
@@ -166,8 +166,8 @@ public class Client implements IVerificationStatusListener {
      * @param adress
      *            the new adress
      */
-    public void setAdress(final Inet4Address adress) {
-	this.adress = adress;
+    public void setAdress(final RemoteConnection adress) {
+	this.socket = adress;
     }
 
     /**
@@ -188,10 +188,16 @@ public class Client implements IVerificationStatusListener {
      */
     @Override
     public final String toString() {
-	if (adress == null) {
+	if (socket == null) {
 	    return "";
 	}
-	return adress.getHostAddress();
+	try {
+	    return socket.getRemoteAddress().toString();
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+	return "";
     }
 
     /**
@@ -213,7 +219,7 @@ public class Client implements IVerificationStatusListener {
     public int hashCode() {
 	final int prime = 31;
 	int result = 1;
-	result = prime * result + ((adress == null) ? 0 : adress.hashCode());
+	result = prime * result + ((socket == null) ? 0 : socket.hashCode());
 	return result;
     }
 
@@ -226,10 +232,10 @@ public class Client implements IVerificationStatusListener {
 	if (!(obj instanceof Client))
 	    return false;
 	Client other = (Client) obj;
-	if (adress == null) {
-	    if (other.adress != null)
+	if (socket == null) {
+	    if (other.socket != null)
 		return false;
-	} else if (!adress.equals(other.adress))
+	} else if (!socket.equals(other.socket))
 	    return false;
 	return true;
     }

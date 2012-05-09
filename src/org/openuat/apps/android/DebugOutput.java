@@ -32,6 +32,7 @@ public class DebugOutput
 			m_calc = _calc;
 		}
 
+		@Override
 		public void run()
 		{
 			String[] speed_strings = new String[3];

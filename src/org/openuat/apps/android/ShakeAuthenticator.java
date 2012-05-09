@@ -5,7 +5,6 @@ import org.openuat.authentication.accelerometer.ShakeWellBeforeUseProtocol1;
 import org.openuat.channel.main.HostAuthenticationServer;
 import org.openuat.channel.main.RemoteConnection;
 
-import android.content.Intent;
 import android.util.Log;
 
 /**
@@ -29,6 +28,7 @@ public class ShakeAuthenticator extends ShakeWellBeforeUseProtocol1 {
 		return keyManager;
 	}
 
+	@Override
 	protected void protocolFailedHook(boolean failHard,
 			RemoteConnection remote, Object optionalVerificationId,
 			Exception e, String message) {
@@ -38,6 +38,7 @@ public class ShakeAuthenticator extends ShakeWellBeforeUseProtocol1 {
 //		app.setAuthenticationSuccess(false);
 	}
 
+	@Override
 	protected void protocolSucceededHook(RemoteConnection remote,
 			Object optionalVerificationId, String optionalParameterFromRemote,
 			byte[] sharedSessionKey) {
@@ -47,6 +48,7 @@ public class ShakeAuthenticator extends ShakeWellBeforeUseProtocol1 {
 //		app.setAuthenticationSuccess(true);
 	}
 
+	@Override
 	protected void startVerificationAsync(byte[] sharedAuthenticationKey,
 			String optionalParam, RemoteConnection remote) {
 		super.startVerificationAsync(sharedAuthenticationKey, optionalParam, remote);

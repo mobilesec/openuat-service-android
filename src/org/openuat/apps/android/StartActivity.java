@@ -70,6 +70,7 @@ public class StartActivity extends Activity implements OnClickListener,
 
 		Button scanButton = (Button) findViewById(R.id.Button02);
 		scanButton.setOnClickListener(new OnClickListener() {
+			@Override
 			public void onClick(View v) {
 				doDiscovery();
 			}
@@ -149,6 +150,7 @@ public class StartActivity extends Activity implements OnClickListener,
 	 */
 	private void initDeviceClickListener() {
 		deviceClickListener = new OnItemClickListener() {
+			@Override
 			public void onItemClick(AdapterView<?> av, View v, int arg2,
 					long arg3) {
 
@@ -205,6 +207,7 @@ public class StartActivity extends Activity implements OnClickListener,
 	 *            An Intent, which can return result data to the caller (various
 	 *            data can be attached to Intent "extras").
 	 */
+	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == Activity.RESULT_CANCELED) {
 			turnOnBTandDiscoverable();
@@ -216,6 +219,7 @@ public class StartActivity extends Activity implements OnClickListener,
 	 */
 	private void initBTDeviceReceiver() {
 		Receiver = new BroadcastReceiver() {
+			@Override
 			public void onReceive(Context context, Intent intent) {
 				Log.i(this.getClass().toString(), "onReceive");
 				String action = intent.getAction();

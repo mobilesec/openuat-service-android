@@ -16,6 +16,7 @@ import java.util.ArrayList;
 
 import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
+import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.util.Hash;
 
@@ -47,7 +48,7 @@ public class SecureChannel extends Stub {
     private byte[] sessionkey = null;
     private byte[] oobKey = null;
 
-    private RemoteTCPConnection remoteTcpConnection = null;
+    private RemoteConnection remoteConnection = null;
 
     private volatile Thread receiveTrigger = null;
     private final Thread receiveThread = new Thread(new Runnable() {
@@ -109,14 +110,13 @@ public class SecureChannel extends Stub {
     /**
      * Instantiates a new secure channel.
      * 
-     * @param remoteTcpConnection
+     * @param toRemote
      *            the remote tcp connection
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public SecureChannel(final RemoteTCPConnection remoteTcpConnection)
-	    throws IOException {
-	this.remoteTcpConnection = remoteTcpConnection;
+    public SecureChannel(final RemoteConnection toRemote) throws IOException {
+	this.remoteConnection = toRemote;
 	callbacks = new RemoteCallbackList<IReceiverCallback>();
 	verificationStatusListener = new ArrayList<IVerificationStatusListener>();
     }
@@ -157,7 +157,7 @@ public class SecureChannel extends Stub {
 	try {
 	    if (inStream == null) {
 		inStream = new BufferedInputStream(
-			remoteTcpConnection.getInputStream());
+			remoteConnection.getInputStream());
 	    }
 	    inStream.read(prefix);
 	    try {
@@ -200,11 +200,11 @@ public class SecureChannel extends Stub {
      */
     @Override
     public boolean send(final byte[] data) throws RemoteException {
-	if (remoteTcpConnection != null) {
+	if (remoteConnection != null) {
 	    try {
 		if (outStream == null) {
 		    outStream = new BufferedOutputStream(
-			    remoteTcpConnection.getOutputStream());
+			    remoteConnection.getOutputStream());
 		}
 		Log.d(this.toString(), "sending..");
 		final byte[] prefix = java.util.Arrays.copyOfRange(String
@@ -234,7 +234,7 @@ public class SecureChannel extends Stub {
 	} else {
 	    setReceivePolling(false);
 	    setVerificationPolling(false);
-	    remoteTcpConnection = null;
+	    remoteConnection = null;
 	}
 
 	for (IVerificationStatusListener listener : verificationStatusListener) {

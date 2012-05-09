@@ -8,16 +8,37 @@
  */
 package org.openuat.android.service;
 
+import java.io.IOException;
+import java.net.UnknownHostException;
+
+import org.openuat.android.Constants;
 import org.openuat.authentication.DHWithVerification;
 import org.openuat.channel.main.HostAuthenticationServer;
 import org.openuat.channel.main.RemoteConnection;
+import org.openuat.channel.main.ip.RemoteTCPConnection;
 
 /**
  * TODO: add class comment.
- *
+ * 
  * @author Hannes Markschlaeger
  */
 public abstract class DHwithVerificationHelper extends DHWithVerification {
+
+    int tcpPort;
+    int numResetHookCalled = 0;
+    int numSucceededHookCalled = 0;
+    int numFailedHardHookCalled = 0;
+    int numFailedSoftHookCalled = 0;
+    int numProgressHookCalled = 0;
+    int numStartedHookCalled = 0;
+    byte[] sharedAuthKey = null;
+    byte[] sharedSessKey = null;
+    private boolean succeed;
+    private boolean failHard;
+    String param;
+
+    Object optVerifyIdIn = null, optVerifyIdOut = null;
+    String optParamIn = null, optParamOut = null;
 
     /**
      * @param server
@@ -33,67 +54,59 @@ public abstract class DHwithVerificationHelper extends DHWithVerification {
 	    boolean useJSSE) {
 	super(server, keepConnectedOnSuccess, keepConnectedOnFailure,
 		concurrentVerificationSupported, instanceId, useJSSE);
-	// TODO Auto-generated constructor stub
+	try {
+	    startListening();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	}
     }
 
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#startVerificationAsync(byte[], java.lang.String, org.openuat.channel.main.RemoteConnection)
-     */
-    @Override
-    protected void startVerificationAsync(byte[] sharedAuthenticationKey,
-	    String optionalParam, RemoteConnection toRemote) {
-	// TODO Auto-generated method stub
+//    @Override
+//    protected void startVerificationAsync(byte[] sharedAuthenticationKey,
+//	    String parm, RemoteConnection remote) {
+//	this.param = parm;
+//	// need to copy here to retain until after success of failure - the
+//	// original will be wiped
+//	this.sharedAuthKey = new byte[sharedAuthenticationKey.length];
+//	System.arraycopy(sharedAuthenticationKey, 0, this.sharedAuthKey, 0,
+//		sharedAuthenticationKey.length);
+//
+//	if (succeed)
+//	    this.verificationSuccess(remote, optVerifyIdIn, optParamIn);
+//	else
+//	    this.verificationFailure(failHard, remote, optVerifyIdIn,
+//		    optParamIn, null, null);
+//
+//    }
 
-    }
-
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#resetHook(org.openuat.channel.main.RemoteConnection)
-     */
     @Override
     protected void resetHook(RemoteConnection remote) {
-	// TODO Auto-generated method stub
-
     }
 
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#protocolSucceededHook(org.openuat.channel.main.RemoteConnection, java.lang.Object, java.lang.String, byte[])
-     */
     @Override
     protected void protocolSucceededHook(RemoteConnection remote,
 	    Object optionalVerificationId, String optionalParameterFromRemote,
 	    byte[] sharedSessionKey) {
-	// TODO Auto-generated method stub
-
     }
 
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#protocolFailedHook(boolean, org.openuat.channel.main.RemoteConnection, java.lang.Object, java.lang.Exception, java.lang.String)
-     */
     @Override
-    protected void protocolFailedHook(boolean failHard,
+    protected void protocolFailedHook(boolean failedHard,
 	    RemoteConnection remote, Object optionalVerificationId,
 	    Exception e, String message) {
-	// TODO Auto-generated method stub
-
     }
 
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#protocolProgressHook(org.openuat.channel.main.RemoteConnection, int, int, java.lang.String)
-     */
     @Override
     protected void protocolProgressHook(RemoteConnection remote, int cur,
 	    int max, String message) {
-	// TODO Auto-generated method stub
-
     }
 
-    /* (non-Javadoc)
-     * @see org.openuat.authentication.DHWithVerification#protocolStartedHook(org.openuat.channel.main.RemoteConnection)
-     */
     @Override
     protected void protocolStartedHook(RemoteConnection remote) {
-	// TODO Auto-generated method stub
+    }
 
+    public void startAuthentication(RemoteTCPConnection remote, String parm)
+	    throws UnknownHostException, IOException {
+	this.startAuthentication(remote, Constants.TCP_PORT, parm);
     }
 
 }
