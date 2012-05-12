@@ -12,12 +12,13 @@ package org.openuat.android.service;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.openuat.android.Constants;
+import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
+import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.android.service.interfaces.ISecureChannel;
@@ -34,9 +35,9 @@ import android.util.Log;
 /**
  * The Class DiscoverService.
  * 
- * 
+ *  
  * @author Hannes Markschlaeger
- */
+ */ 
 public class DiscoverService extends Service {
 
     public static Context context = null;
@@ -56,29 +57,45 @@ public class DiscoverService extends Service {
 		final String device) throws RemoteException {
 	    Log.i(this.toString(), "authenticate" + device);
 
-	    final String[] s = device.split("/");
+	    // final String[] s = device.split("/");
+	    //
+	    // InetAddress ad = null;
+	    // try {
+	    // ad = InetAddress.getByName(s[s.length - 1]);
+	    // Log.d(this.toString(), ad.toString());
+	    // } catch (final UnknownHostException e1) {
+	    // e1.printStackTrace();
+	    // }
+	    //
+	    // if (ad.equals(Util.getipAddress())) {
+	    // throw new RemoteException();
+	    // }
 
-	    InetAddress ad = null;
+	    OpenUAT_ID id = OpenUAT_ID.parseToken(device);
+	    @SuppressWarnings("cast")
+	    InetAddress adress = (InetAddress) TCP.getAvailableClients()
+		    .get(id);
+
 	    try {
-		ad = InetAddress.getByName(s[s.length - 1]);
-		Log.d(this.toString(), ad.toString());
-	    } catch (final UnknownHostException e1) {
+		Client c = id.getApp().getClientById(id);
+		RemoteTCPConnection con = new RemoteTCPConnection(new Socket(
+			adress, Constants.TCP_PORT));
+		c.setRemote(con);
+		c.setSecureChannel(new SecureChannel(con));
+		return c.getSecureChannel();
+	    } catch (IOException e1) {
 		e1.printStackTrace();
 	    }
 
-	    if (ad.equals(Util.getipAddress())) {
-		throw new RemoteException();
-	    }
-
-	    SecureChannel chan = null;
-	    try {
-		chan = RegisteredAppManager.getServiceByName(serviceId)
-			.getClientByAdress(ad).openConnection();
-
-	    } catch (final IOException e) {
-		throw new RemoteException();
-	    }
-	    return chan;
+	    // SecureChannel chan = null;
+	    // try {
+	    // chan = RegisteredAppManager.getServiceByName(serviceId)
+	    // .getClientById(adress).openConnection();
+	    //
+	    // } catch (final IOException e) {
+	    // throw new RemoteException();
+	    // }
+	    return null;
 	}
 
 	@Override
@@ -112,17 +129,18 @@ public class DiscoverService extends Service {
 	@Override
 	public void register(final String serviceId,
 		IConnectionCallback connectionCallback) throws RemoteException {
+
 	    final RegisteredApp app = new RegisteredApp(serviceId,
 		    IConnectionType.CONNECTION_TYPE.WIFI);
 	    RegisteredAppManager.registerService(app);
 
-	    try {
-		app.addClient(new Client(new RemoteTCPConnection(new Socket(
-			Util.getipAddress(), Constants.TCP_PORT)),
-			connectionCallback));
-	    } catch (IOException e) {
-		e.printStackTrace();
-	    }
+	    // try {
+	    // app.addClient(new Client(new RemoteTCPConnection(new Socket(
+	    // Util.getipAddress(), Constants.TCP_PORT)),
+	    // connectionCallback));
+	    // } catch (IOException e) {
+	    // e.printStackTrace();
+	    // }
 	    Log.i(this.toString(), app + " registered");
 	}
 

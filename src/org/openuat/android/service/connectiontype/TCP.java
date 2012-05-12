@@ -12,16 +12,16 @@ package org.openuat.android.service.connectiontype;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.openuat.android.Constants;
+import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.Client;
 import org.openuat.android.service.RegisteredApp;
 import org.openuat.android.service.Util;
 import org.openuat.channel.main.MessageListener;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.channel.main.ip.UDPMulticastSocket;
 
 import android.util.Log;
@@ -41,8 +41,6 @@ public final class TCP implements IConnectionType, MessageListener {
 	public void run() {
 	    final Thread thisThread = Thread.currentThread();
 	    Log.i(this.toString(), "thread started");
-	    Log.i(this.toString(), thisThread.toString() + " "
-		    + TCP.mDiscoverThread.toString());
 
 	    while (thisThread == TCP.mDiscoverThread) {
 		try {
@@ -76,6 +74,8 @@ public final class TCP implements IConnectionType, MessageListener {
     /** The m udp multi sock. */
     private static UDPMulticastSocket mUdpMultiSock = null;
 
+    private static HashMap<OpenUAT_ID, InetAddress> availableClients = null;
+
     /**
      * Gets the single instance of TCP.
      * 
@@ -96,6 +96,7 @@ public final class TCP implements IConnectionType, MessageListener {
      */
     private TCP() {
 	try {
+	    availableClients = new HashMap<OpenUAT_ID, InetAddress>();
 	    TCP.mUdpMultiSock = new UDPMulticastSocket(Constants.UDP_PORT,
 		    Constants.UDP_PORT, "255.255.255.255");
 	    TCP.mUdpMultiSock.addIncomingMessageListener(this);
@@ -133,68 +134,67 @@ public final class TCP implements IConnectionType, MessageListener {
     @Override
     public void handleMessage(final byte[] message, final int offset,
 	    final int length, final Object sender) {
+	synchronized (this) {
+	    Inet4Address sentFrom = (Inet4Address) ((sender instanceof Inet4Address) ? sender
+		    : null);
 
-	Inet4Address sentFrom = (Inet4Address) ((sender instanceof Inet4Address) ? sender
-		: null);
-
-	if (sentFrom.getHostAddress().equals(mLocalIp.getHostAddress())) {
-	    return;
-	}
-
-	if ((message == null) || (length == 0)) {
-	    Log.i("UDP received", "Message is null!");
-	    return;
-	}
-
-	final String[] received = new String(message, offset, length)
-		.split("\\" + Constants.SEPERATOR);
-
-	if (received.length < 2) {
-	    Log.i("UDP received", "Message not correct!");
-	    return;
-	}
-
-	final String recApp = received[0];
-	final String recControl = received[1];
-
-	if (recApp.length() <= 0 || recControl.length() <= 0) {
-	    Log.i("UDP received", "Message not correct!");
-	    return;
-	}
-
-	// final String recMessage = received.length == 3 ? received[2] : "";
-	// Log.d(this.toString(), recApp + " " + recControl + " " + recMessage);
-
-	// Log.d(this.toString(), recControl);
-	// Message received?
-
-	for (final RegisteredApp app : TCP.mServices) {
-	    // Get corresponding app
-	    if (app.getName().equalsIgnoreCase(recApp)) {
-		// Challenge received? -> respond!
-		if (recControl.equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
-		    try {
-			TCP.mUdpMultiSock
-				.sendTo((app.getName() + Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
-					.getBytes(), sentFrom);
-		    } catch (final IOException e) {
-			e.printStackTrace();
-		    }
-		} else if (recControl
-			.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
-		    final Client c = new Client();
-		    try {
-			c.setAdress(new RemoteTCPConnection(new Socket(
-				sentFrom, Constants.TCP_PORT)));
-		    } catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		    }
-		    app.addClient(c);
-		}
+	    if (sentFrom.getHostAddress().equals(mLocalIp.getHostAddress())) {
 		return;
 	    }
+
+	    if ((message == null) || (length == 0)) {
+		Log.i("UDP received", "Message is null!");
+		return;
+	    }
+
+	    final String[] received = new String(message, offset, length)
+		    .split("\\" + Constants.SEPERATOR);
+
+	    if (received.length < 2) {
+		Log.i("UDP received", "Message not correct!");
+		return;
+	    }
+
+	    final String recApp = received[0];
+	    final String recControl = received[1];
+
+	    if (recApp.length() <= 0 || recControl.length() <= 0) {
+		Log.i("UDP received", "Message not correct!");
+		return;
+	    }
+
+	    Log.i("recapp", recApp);
+	    Log.i("reccontrol", recControl);
+
+	    for (final RegisteredApp app : TCP.mServices) {
+		// Get corresponding app
+		if (app.getName().equalsIgnoreCase(recApp)) {
+		    // Challenge received? -> respond!
+		    if (recControl
+			    .equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
+			try {
+			    TCP.mUdpMultiSock
+				    .sendTo((app.getLocalId().toString()
+					    + Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
+					    .getBytes(), sentFrom);
+			} catch (final IOException e) {
+			    e.printStackTrace();
+			}
+		    } else if (recControl
+			    .equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
+			OpenUAT_ID id = OpenUAT_ID.parseToken(recApp);
+			Log.i(this.toString(),
+				"Respond received from " + id.toString());
+			final Client c = new Client(id);
+			// c.setAdress(null);
+			app.addClient(c);
+			availableClients.put(id, sentFrom);
+		    }
+		    return;
+		}
+	    }
 	}
+
     }
 
     /*
@@ -211,24 +211,8 @@ public final class TCP implements IConnectionType, MessageListener {
 	}
     }
 
-    /**
-     * Send udp message.
-     * 
-     * @param message
-     *            the message
-     * @param client
-     *            the client
-     */
-    public static void sendUdpMessage(final String message, final Client client) {
-	try {
-	    // Log.d(this.toString(), message.toString());
-	    TCP.getInstance();
-	    if (client.getAdress() instanceof RemoteTCPConnection) {
-		TCP.mUdpMultiSock.sendTo(message.getBytes(),
-			(InetAddress) client.getAdress().getRemoteAddress());
-	    }
-	} catch (final IOException e) {
-	    e.printStackTrace();
-	}
+    public static final HashMap<OpenUAT_ID, InetAddress> getAvailableClients() {
+	return availableClients;
     }
+
 }

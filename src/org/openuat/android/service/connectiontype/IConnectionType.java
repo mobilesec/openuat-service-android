@@ -29,11 +29,11 @@ public interface IConnectionType {
 
 	/** The BLUETOOTH. */
 	BLUETOOTH,
-	
 	/** The WIFI. */
 	WIFI
     };
-
+    
+    public String toString();
     /**
      * Adds the app.
      * 
