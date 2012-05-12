@@ -11,8 +11,11 @@ package org.openuat.android.service;
 
 import java.util.ArrayList;
 
+import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
+import org.openuat.channel.main.RemoteConnection;
 
+import android.provider.Settings.Secure;
 import android.util.Log;
 
 /**
@@ -23,11 +26,19 @@ import android.util.Log;
  */
 public class RegisteredApp {
 
+    private OpenUAT_ID localId = null;
+
+    public OpenUAT_ID getLocalId() {
+	return localId;
+    }
+
     /** The is discovering. */
     private boolean isDiscovering = true;
 
     /** The m clients. */
     private ArrayList<Client> mClients = null;
+
+    public ArrayList<OpenUAT_ID> ids = null;
 
     /** The m connection. */
     private final IConnectionType.CONNECTION_TYPE mConnection;
@@ -48,6 +59,12 @@ public class RegisteredApp {
 	mName = service;
 	mClients = new ArrayList<Client>();
 	mConnection = connection;
+
+	ids = new ArrayList<OpenUAT_ID>();
+
+	localId = new OpenUAT_ID(mConnection, this,
+		Secure.getString(DiscoverService.context.getContentResolver(),
+			Secure.ANDROID_ID));
     }
 
     /**
@@ -114,10 +131,28 @@ public class RegisteredApp {
     // final String recMessage) {
     //
     // }
-    public Client getClientByAdress(final Object object) {
-	Log.d(this.toString(), "getClientbyIp " + object.toString());
+    public Client getClientById(final OpenUAT_ID id) {
+	Log.d(this.toString(), "getClientById " + id.toString());
+	// for (final Client c : mClients) {
+	// if (c.getAdress().equals(id)) {
+	// Log.d(this.toString(), "client found " + c.toString());
+	// return c;
+	// }
+	// }
 	for (final Client c : mClients) {
-	    if (c.getAdress().equals(object)) {
+	    if (c.getId().equals(id)) {
+		Log.d(this.toString(), "client found " + c.toString());
+		return c;
+	    }
+	}
+	Log.d(this.toString(), "no client found");
+	return null;
+    }
+
+    public Client getClientByRemoteObject(final RemoteConnection remote) {
+	Log.d(this.toString(), "getClientByRemoteObject " + remote.toString());
+	for (final Client c : mClients) {
+	    if (c.getRemoteObject().equals(remote)) {
 		Log.d(this.toString(), "client found " + c.toString());
 		return c;
 	    }
@@ -139,71 +174,33 @@ public class RegisteredApp {
 	this.isDiscovering = isDiscovering;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
 	return mName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
 	final int prime = 31;
 	int result = 1;
-	result = prime * result + (isDiscovering ? 1231 : 1237);
-	result = prime * result
-		+ ((mClients == null) ? 0 : mClients.hashCode());
-	result = prime * result
-		+ ((mConnection == null) ? 0 : mConnection.hashCode());
 	result = prime * result + ((mName == null) ? 0 : mName.hashCode());
 	return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
-	if (this == obj) {
+	if (this == obj)
 	    return true;
-	}
-	if (obj == null) {
+	if (obj == null)
 	    return false;
-	}
-	if (!(obj instanceof RegisteredApp)) {
+	if (!(obj instanceof RegisteredApp))
 	    return false;
-	}
 	RegisteredApp other = (RegisteredApp) obj;
-	if (isDiscovering != other.isDiscovering) {
-	    return false;
-	}
-	if (mClients == null) {
-	    if (other.mClients != null) {
-		return false;
-	    }
-	} else if (!mClients.equals(other.mClients)) {
-	    return false;
-	}
-	if (mConnection != other.mConnection) {
-	    return false;
-	}
 	if (mName == null) {
-	    if (other.mName != null) {
+	    if (other.mName != null)
 		return false;
-	    }
-	} else if (!mName.equals(other.mName)) {
+	} else if (!mName.equals(other.mName))
 	    return false;
-	}
 	return true;
     }
 

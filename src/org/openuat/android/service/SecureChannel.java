@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
 import org.openuat.channel.main.RemoteConnection;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.util.Hash;
 
 import android.os.RemoteCallbackList;

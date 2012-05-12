@@ -9,7 +9,6 @@
  */
 package org.openuat.apps.android;
 
-import org.openuat.android.R;
 import org.openuat.sensors.VectorSamplesSink;
 import org.openuat.sensors.android.AndroidAccelerometerSource;
 

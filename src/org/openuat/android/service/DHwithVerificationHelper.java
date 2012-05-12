@@ -54,11 +54,6 @@ public abstract class DHwithVerificationHelper extends DHWithVerification {
 	    boolean useJSSE) {
 	super(server, keepConnectedOnSuccess, keepConnectedOnFailure,
 		concurrentVerificationSupported, instanceId, useJSSE);
-	try {
-	    startListening();
-	} catch (IOException e) {
-	    e.printStackTrace();
-	}
     }
 
 //    @Override
@@ -102,11 +97,6 @@ public abstract class DHwithVerificationHelper extends DHWithVerification {
 
     @Override
     protected void protocolStartedHook(RemoteConnection remote) {
-    }
-
-    public void startAuthentication(RemoteTCPConnection remote, String parm)
-	    throws UnknownHostException, IOException {
-	this.startAuthentication(remote, Constants.TCP_PORT, parm);
     }
 
 }

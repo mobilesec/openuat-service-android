@@ -11,16 +11,20 @@ package org.openuat.android.service;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 
 import org.openuat.android.Constants;
-import org.openuat.android.R;
+import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.SecureChannel.VERIFICATION_STATUS;
+import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.authentication.AuthenticationProgressHandler;
 import org.openuat.authentication.HostProtocolHandler;
 import org.openuat.channel.main.RemoteConnection;
+import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.util.Hash;
 
+import android.R;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -34,10 +38,15 @@ import android.util.Log;
  */
 public class Client implements IVerificationStatusListener {
 
-    private RemoteConnection socket = null;
+    private RemoteConnection remote = null;
     private SecureChannel secureChannel = null;
     private IConnectionCallback connectionCallback = null;
     private boolean isLocalClient = false;
+    private OpenUAT_ID id;
+
+    public final OpenUAT_ID getId() {
+	return id;
+    }
 
     /**
      * Instantiates a new client.
@@ -47,7 +56,7 @@ public class Client implements IVerificationStatusListener {
 
     public Client(RemoteConnection adress,
 	    IConnectionCallback connectionCallback) {
-	this.socket = adress;
+	this.remote = adress;
 	this.connectionCallback = connectionCallback;
 	try {
 	    isLocalClient = ((InetAddress) adress.getRemoteAddress())
@@ -58,6 +67,13 @@ public class Client implements IVerificationStatusListener {
 	    e.printStackTrace();
 	}
 
+    }
+
+    /**
+     * @param id
+     */
+    public Client(OpenUAT_ID id) {
+	this.id = id;
     }
 
     /** The authentication handler. */
@@ -102,7 +118,7 @@ public class Client implements IVerificationStatusListener {
 	    intent.putExtra("ENCODE_DATA", Hash.getHexString(sharedOObMsg));
 	    intent.putExtra("ENCODE_SHOW_CONTENTS", true);
 
-	    Notification notif = new Notification(R.drawable.ic_launcher,
+	    Notification notif = new Notification(R.drawable.ic_dialog_alert,
 		    "Verification required", System.currentTimeMillis());
 
 	    PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -131,8 +147,8 @@ public class Client implements IVerificationStatusListener {
      * 
      * @return the adress
      */
-    public RemoteConnection getAdress() {
-	return socket;
+    public RemoteConnection getRemoteObject() {
+	return remote;
     }
 
     /**
@@ -144,18 +160,33 @@ public class Client implements IVerificationStatusListener {
      */
     public SecureChannel openConnection() throws IOException {
 	Log.d(this.toString(), "openConnection");
-	Log.d(this.toString(), socket.toString());
+	// Log.d(this.toString(), remote.toString());
+	//
+	// if ((secureChannel != null)
+	// && secureChannel.getVerificationStatus() ==
+	// VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
+	// return secureChannel;
+	// }
+	// Log.d(this.toString(), "opening sockets");
+	//
+	// secureChannel = new SecureChannel(remote);
+	// HostProtocolHandler.startAuthenticationWith(remote,
+	// authenticationHandler, -1, true, RegisteredAppManager
+	// .getServiceOfClient(this).getName(), true);
+	// return secureChannel;
 
+	Log.d(this.toString(), "openConnection");
+	InetAddress adress = TCP.getAvailableClients().get(id);
 	if ((secureChannel != null)
 		&& secureChannel.getVerificationStatus() == VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
+	    Log.d(this.toString(), "channel present");
 	    return secureChannel;
 	}
-	Log.d(this.toString(), "opening sockets");
-
-	secureChannel = new SecureChannel(socket);
-	HostProtocolHandler.startAuthenticationWith(socket,
-		authenticationHandler, -1, true, RegisteredAppManager
-			.getServiceOfClient(this).getName(), true);
+	Log.d(this.toString(), "no channel found - creating new one");
+	RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
+		Constants.TCP_PORT));
+	setRemote(con);
+	setSecureChannel(new SecureChannel(con));
 	return secureChannel;
 
     }
@@ -166,8 +197,8 @@ public class Client implements IVerificationStatusListener {
      * @param adress
      *            the new adress
      */
-    public void setAdress(final RemoteConnection adress) {
-	this.socket = adress;
+    public void setRemote(final RemoteConnection adress) {
+	this.remote = adress;
     }
 
     /**
@@ -176,27 +207,19 @@ public class Client implements IVerificationStatusListener {
      * @param channel
      *            the new connection
      */
-    public void setConnection(final SecureChannel channel) {
+    public void setSecureChannel(final SecureChannel channel) {
 	secureChannel = channel;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
+    public final SecureChannel getSecureChannel() {
+	return secureChannel;
+    }
+
     @Override
-    public final String toString() {
-	if (socket == null) {
-	    return "";
-	}
-	try {
-	    return socket.getRemoteAddress().toString();
-	} catch (IOException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	}
-	return "";
+    public String toString() {
+	StringBuilder builder = new StringBuilder();
+	builder.append(id);
+	return builder.toString();
     }
 
     /**
@@ -215,14 +238,6 @@ public class Client implements IVerificationStatusListener {
     }
 
     @Override
-    public int hashCode() {
-	final int prime = 31;
-	int result = 1;
-	result = prime * result + ((socket == null) ? 0 : socket.hashCode());
-	return result;
-    }
-
-    @Override
     public boolean equals(Object obj) {
 	if (this == obj)
 	    return true;
@@ -231,10 +246,10 @@ public class Client implements IVerificationStatusListener {
 	if (!(obj instanceof Client))
 	    return false;
 	Client other = (Client) obj;
-	if (socket == null) {
-	    if (other.socket != null)
+	if (remote == null) {
+	    if (other.remote != null)
 		return false;
-	} else if (!socket.equals(other.socket))
+	} else if (!remote.equals(other.remote))
 	    return false;
 	return true;
     }
