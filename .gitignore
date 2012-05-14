@@ -1,12 +1,9 @@
-
 /.checkstyle
 /old.rar
 *.properties
 /bin
 /.classpath
-*.project
 /.classpath
-/.project
 /build.properties
 /default.properties
 /proguard.cfg
@@ -16,7 +13,6 @@
 /gen/org/openuat/android/R.java
 /gen
 /.classpath
-/.project
 /build.properties
 /default.properties
 /proguard.cfg

@@ -14,8 +14,6 @@ import org.openuat.android.service.connectiontype.IConnectionType.CONNECTION_TYP
 import org.openuat.authentication.exceptions.InternalApplicationException;
 import org.openuat.util.Hash;
 
-import android.util.Log;
-
 /**
  * TODO: add class comment.
  * 
@@ -56,7 +54,7 @@ public class OpenUAT_ID {
 
     public static OpenUAT_ID parseToken(String token) {
 
-	String[] tokens = token.split("\\n");
+	String[] tokens = token.split("_");
 
 	if (tokens.length != 3) {
 	    return null;
@@ -79,9 +77,9 @@ public class OpenUAT_ID {
     public String toString() {
 	StringBuilder strb = new StringBuilder();
 	strb.append(androidId);
-	strb.append("\n");
+	strb.append("_");
 	strb.append(app.toString());
-	strb.append("\n");
+	strb.append("_");
 	strb.append(connection_type.toString());
 	return strb.toString();
     }

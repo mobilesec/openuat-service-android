@@ -40,6 +40,11 @@ public class Client implements IVerificationStatusListener {
 
     private RemoteConnection remote = null;
     private SecureChannel secureChannel = null;
+
+    public AuthenticationProgressHandler getAuthenticationHandler() {
+	return authenticationHandler;
+    }
+
     private IConnectionCallback connectionCallback = null;
     private boolean isLocalClient = false;
     private OpenUAT_ID id;
@@ -77,7 +82,7 @@ public class Client implements IVerificationStatusListener {
     }
 
     /** The authentication handler. */
-    private final AuthenticationProgressHandler authenticationHandler = new AuthenticationProgressHandler() {
+    public final AuthenticationProgressHandler authenticationHandler = new AuthenticationProgressHandler() {
 
 	@Override
 	public void AuthenticationFailure(final Object sender,
@@ -187,6 +192,10 @@ public class Client implements IVerificationStatusListener {
 		Constants.TCP_PORT));
 	setRemote(con);
 	setSecureChannel(new SecureChannel(con));
+	HostProtocolHandler.startAuthenticationWith(getRemoteObject(),
+		authenticationHandler, Constants.PROTOCOL_TIMEOUT,
+		Constants.KEEP_CONNECTED, id.getApp().getLocalId().toString(),
+		Constants.USE_JSSE);
 	return secureChannel;
 
     }

@@ -8,14 +8,9 @@
  */
 package org.openuat.android.service;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-
-import org.openuat.android.Constants;
 import org.openuat.authentication.DHWithVerification;
 import org.openuat.channel.main.HostAuthenticationServer;
 import org.openuat.channel.main.RemoteConnection;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
 
 /**
  * TODO: add class comment.

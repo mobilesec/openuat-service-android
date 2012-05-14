@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.openuat.android.Constants;
+import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.dialogs.VerificationQR;
 import org.openuat.android.service.SecureChannel.VERIFICATION_STATUS;
 import org.openuat.authentication.AuthenticationProgressHandler;
@@ -24,6 +25,7 @@ import android.R;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.provider.OpenableColumns;
 import android.util.Log;
 
 /**
@@ -41,10 +43,11 @@ public final class TCPPortServerHandler {
     private static TCPPortServer tcpPortServer = null;
 
     private ArrayList<RemoteTCPConnection> attemptingClients = null;
+    DHwithVerificationHelper dhhelper = null;
 
     /**
      * Gets the single instance of TCPPortServerHandler.
-     *  
+     * 
      * @return single instance of TCPPortServerHandler
      */
     public static TCPPortServerHandler getInstance() {
@@ -54,84 +57,105 @@ public final class TCPPortServerHandler {
 	return TCPPortServerHandler.instance;
     }
 
-    //
-    DHwithVerificationHelper dhhelper = new DHwithVerificationHelper(
-	    tcpPortServer, true, false, true, null, true) {
+    private void initDHwithVerification() {
 
-	@Override
-	protected void startVerificationAsync(byte[] sharedAuthenticationKey,
-		String optionalParam, RemoteConnection toRemote) {
-
-	    SecureChannel chan = null;
-
-	    Intent intent = new Intent(DiscoverService.context,
-		    VerificationQR.class);
-
-	    PendingIntent pendingIntent = PendingIntent.getActivity(
-		    DiscoverService.context, 0, intent,
-		    PendingIntent.FLAG_ONE_SHOT
-			    | PendingIntent.FLAG_CANCEL_CURRENT);
-
-	    Notification notif = new Notification(R.drawable.ic_menu_help,
-		    "verfication required", System.currentTimeMillis());
-	    notif.setLatestEventInfo(DiscoverService.context,
-		    "OpenUAT - Incoming connection",
-		    "Please verify the connection", pendingIntent);
-	    notif.flags = Notification.FLAG_NO_CLEAR
-		    | Notification.FLAG_AUTO_CANCEL;
-
-	    DiscoverService.mNotificationManager.notify(
-		    Constants.NOTIF_VERIFICATION_RESPONSE, notif);
-
-	    final RegisteredApp app = RegisteredAppManager
-		    .getServiceByName(optionalParam);
-
-	    Client c = null;
-	    try {
-		chan = new SecureChannel(toRemote);
-		c = app.getClientByAdress(toRemote.getRemoteAddress());
-		if (c == null) {
-		    c = new Client();
-		    c.setAdress(toRemote);
-		}
-		// TODO #####
-		chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
-		c.setConnection(chan);
-		chan.setOobKey(sharedAuthenticationKey);
-
-		final Client tempClient = c;
-		chan.setVerificationStatusListener(new IVerificationStatusListener() {
-		    @Override
-		    public void onVerificationStatusChanged(
-			    VERIFICATION_STATUS newStatus) {
-			switch (newStatus) {
-			case VERIFICATION_FAILED:
-			    verificationFailure(true, tempClient.getRemoteObject(),
-				    app.toString(), app.toString(),
-				    new Exception(), "verification failed");
-			    break;
-			case VERIFICATION_PENDING:
-			    break;
-			case VERIFICATION_SUCCESS:
-			    break;
-			default:
-			    break;
-			}
-		    }
-		});
-
-	    } catch (final IOException e) {
-		// AuthenticationFailure(sender, remote, e, e.getMessage());
-		chan = null;
-		c = null;
-	    }
-	    if (c != null) {
-		app.addClient(c);
-	    }
-
+	if (tcpPortServer == null) {
+	    Log.i(this.toString(), "TcpPortServer not started!");
+	    return;
 	}
-    };
- 
+	dhhelper = new DHwithVerificationHelper(tcpPortServer, true, false,
+		true, null, Constants.USE_JSSE) {
+
+	    @Override
+	    protected void startVerificationAsync(
+		    byte[] sharedAuthenticationKey, String optionalParam,
+		    RemoteConnection toRemote) {
+
+		SecureChannel chan = null;
+
+		Intent intent = new Intent(DiscoverService.context,
+			VerificationQR.class);
+
+		PendingIntent pendingIntent = PendingIntent.getActivity(
+			DiscoverService.context, 0, intent,
+			PendingIntent.FLAG_ONE_SHOT
+				| PendingIntent.FLAG_CANCEL_CURRENT);
+
+		Notification notif = new Notification(R.drawable.ic_menu_help,
+			"verfication required", System.currentTimeMillis());
+		notif.setLatestEventInfo(DiscoverService.context,
+			"OpenUAT - Incoming connection",
+			"Please verify the connection", pendingIntent);
+		notif.flags = Notification.FLAG_NO_CLEAR
+			| Notification.FLAG_AUTO_CANCEL;
+
+		DiscoverService.mNotificationManager.notify(
+			Constants.NOTIF_VERIFICATION_RESPONSE, notif);
+
+		// final RegisteredApp app = RegisteredAppManager
+		// .getServiceByName(optionalParam);
+
+		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
+		Client c = id.getApp().getClientById(id);
+		try {
+		    chan = new SecureChannel(toRemote);
+		    // c = app.getClientByRemoteObject(toRemote);
+		    if (c == null) {
+			c = new Client();
+			c.setRemote(toRemote);
+			c.setSecureChannel(chan);
+		    }
+		    // TODO #####
+		    chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
+		    chan.setOobKey(sharedAuthenticationKey);
+
+		    final Client tempClient = c;
+		    // TODO check why verification code null
+		    chan.setVerificationStatusListener(new IVerificationStatusListener() {
+			@Override
+			public void onVerificationStatusChanged(
+				VERIFICATION_STATUS newStatus) {
+			    switch (newStatus) {
+			    case VERIFICATION_FAILED:
+				verificationFailure(true,
+					tempClient.getRemoteObject(),
+					tempClient.getId().toString(),
+					tempClient.getId().toString(),
+					new Exception(), "verification failed");
+				break;
+			    case VERIFICATION_PENDING:
+				break;
+			    case VERIFICATION_SUCCESS:
+				verificationSuccess(
+					tempClient.getRemoteObject(),
+					tempClient.getId().toString(),
+					tempClient.getId().toString());
+				break;
+			    default:
+				break;
+			    }
+			}
+		    });
+
+		} catch (final IOException e) {
+		    // AuthenticationFailure(sender, remote, e, e.getMessage());
+		    chan = null;
+		    c = null;
+		}
+		if (c != null) {
+		    // app.addClient(c);
+		}
+
+	    }
+	};
+	try {
+	    dhhelper.startListening();
+	} catch (IOException e) {
+	    Log.i(this.toString(), "  dhhelper.startListening(); failed");
+	    e.printStackTrace();
+	}
+    }
+
     // AuthHandler for incoming
     /** The authentication progress handler. */
     private final AuthenticationProgressHandler authenticationProgressHandler = new AuthenticationProgressHandler() {
@@ -167,15 +191,15 @@ public final class TCPPortServerHandler {
 
 	    SecureChannel chan = null;
 	    RemoteTCPConnection con = null;
-	    RegisteredApp app = null; 
- 
+	    RegisteredApp app = null;
+
 	    Object[] res = (Object[]) result;
 	    byte[] sharedSessionKey = (byte[]) res[0];
 	    final byte[] sharedOObMsg = (byte[]) res[1];
- 
+
 	    Log.i("Client", new String(sharedSessionKey));
 	    Log.i("Client", new String(sharedOObMsg));
- 
+
 	    Intent intent = new Intent(DiscoverService.context,
 		    VerificationQR.class);
 
@@ -231,21 +255,20 @@ public final class TCPPortServerHandler {
      */
     private TCPPortServerHandler() {
 	Log.i(this.toString(), "starting tcpserver");
-//	TCPPortServerHandler.tcpPortServer = new TCPPortServer(
-//		Constants.TCP_PORT, -1, true, false);
-//	try {
-//	    TCPPortServerHandler.tcpPortServer
-//		    .addAuthenticationProgressHandler(authenticationProgressHandler);
-//	    TCPPortServerHandler.tcpPortServer.start();
-//	} catch (final IOException e) {
-//	    e.printStackTrace();
-//	}
-	try {
-	    dhhelper.startListening();
-	} catch (IOException e) {
-	    e.printStackTrace();
-	}
+	TCPPortServerHandler.tcpPortServer = new TCPPortServer(
+		Constants.TCP_PORT, Constants.PROTOCOL_TIMEOUT,
+		Constants.KEEP_CONNECTED, Constants.USE_JSSE);
+	// try {
+	// TCPPortServerHandler.tcpPortServer
+	// .addAuthenticationProgressHandler(authenticationProgressHandler);
+	// TCPPortServerHandler.tcpPortServer.start();
+	// } catch (final IOException e) {
+	// e.printStackTrace();
+	// }
+
+	initDHwithVerification();
 
 	attemptingClients = new ArrayList<RemoteTCPConnection>();
     }
+
 }

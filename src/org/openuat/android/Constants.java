@@ -8,6 +8,7 @@
  */
 package org.openuat.android;
 
+
 public final class Constants {
     public static final int NOTIF_VERIFICATION_CHALLENGE = 100;
     public static final int NOTIF_VERIFICATION_RESPONSE = 101;
@@ -35,4 +36,8 @@ public final class Constants {
 
     /** The Constant UDP_PORT. */
     public static final int UDP_PORT = 6969;
+    
+    public static final boolean USE_JSSE = true;
+    public static final int PROTOCOL_TIMEOUT = -1;
+    public static final boolean KEEP_CONNECTED = true;
 }

@@ -33,6 +33,7 @@ public interface IConnectionType {
 	WIFI
     };
     
+    @Override
     public String toString();
     /**
      * Adds the app.

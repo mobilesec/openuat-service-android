@@ -10,19 +10,14 @@
 package org.openuat.android.service;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
-import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.android.service.interfaces.ISecureChannel;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
 
 import android.app.NotificationManager;
 import android.app.Service;
@@ -45,8 +40,13 @@ public class DiscoverService extends Service {
     public static String oob_key = null;
 
     public DiscoverService() {
-	super();
 	Log.i("DiscoverService", "ctor");
+
+	try {
+	    Thread.sleep(5000);
+	} catch (InterruptedException e) {
+	    e.printStackTrace();
+	}
 	TCPPortServerHandler tcpHandler = TCPPortServerHandler.getInstance();
     }
 
