@@ -13,19 +13,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.openuat.android.Constants;
-import org.openuat.android.OpenUAT_ID;
-import org.openuat.android.dialogs.VerificationQR;
-import org.openuat.android.service.SecureChannel.VERIFICATION_STATUS;
-import org.openuat.authentication.AuthenticationProgressHandler;
-import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.channel.main.ip.TCPPortServer;
 
-import android.R;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.content.Intent;
-import android.provider.OpenableColumns;
 import android.util.Log;
 
 /**
@@ -40,10 +30,10 @@ public final class TCPPortServerHandler {
     private static TCPPortServerHandler instance = null;
 
     /** The tcp port server. */
-    private static TCPPortServer tcpPortServer = null;
+    private TCPPortServer tcpPortServer = null;
 
     private ArrayList<RemoteTCPConnection> attemptingClients = null;
-    DHwithVerificationHelper dhhelper = null;
+    public DHwithVerificationHelper dhhelper = null;
 
     /**
      * Gets the single instance of TCPPortServerHandler.
@@ -64,90 +54,7 @@ public final class TCPPortServerHandler {
 	    return;
 	}
 	dhhelper = new DHwithVerificationHelper(tcpPortServer, true, false,
-		true, null, Constants.USE_JSSE) {
-
-	    @Override
-	    protected void startVerificationAsync(
-		    byte[] sharedAuthenticationKey, String optionalParam,
-		    RemoteConnection toRemote) {
-
-		SecureChannel chan = null;
-
-		Intent intent = new Intent(DiscoverService.context,
-			VerificationQR.class);
-
-		PendingIntent pendingIntent = PendingIntent.getActivity(
-			DiscoverService.context, 0, intent,
-			PendingIntent.FLAG_ONE_SHOT
-				| PendingIntent.FLAG_CANCEL_CURRENT);
-
-		Notification notif = new Notification(R.drawable.ic_menu_help,
-			"verfication required", System.currentTimeMillis());
-		notif.setLatestEventInfo(DiscoverService.context,
-			"OpenUAT - Incoming connection",
-			"Please verify the connection", pendingIntent);
-		notif.flags = Notification.FLAG_NO_CLEAR
-			| Notification.FLAG_AUTO_CANCEL;
-
-		DiscoverService.mNotificationManager.notify(
-			Constants.NOTIF_VERIFICATION_RESPONSE, notif);
-
-		// final RegisteredApp app = RegisteredAppManager
-		// .getServiceByName(optionalParam);
-
-		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
-		Client c = id.getApp().getClientById(id);
-		try {
-		    chan = new SecureChannel(toRemote);
-		    // c = app.getClientByRemoteObject(toRemote);
-		    if (c == null) {
-			c = new Client();
-			c.setRemote(toRemote);
-			c.setSecureChannel(chan);
-		    }
-		    // TODO #####
-		    chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
-		    chan.setOobKey(sharedAuthenticationKey);
-
-		    final Client tempClient = c;
-		    // TODO check why verification code null
-		    chan.setVerificationStatusListener(new IVerificationStatusListener() {
-			@Override
-			public void onVerificationStatusChanged(
-				VERIFICATION_STATUS newStatus) {
-			    switch (newStatus) {
-			    case VERIFICATION_FAILED:
-				verificationFailure(true,
-					tempClient.getRemoteObject(),
-					tempClient.getId().toString(),
-					tempClient.getId().toString(),
-					new Exception(), "verification failed");
-				break;
-			    case VERIFICATION_PENDING:
-				break;
-			    case VERIFICATION_SUCCESS:
-				verificationSuccess(
-					tempClient.getRemoteObject(),
-					tempClient.getId().toString(),
-					tempClient.getId().toString());
-				break;
-			    default:
-				break;
-			    }
-			}
-		    });
-
-		} catch (final IOException e) {
-		    // AuthenticationFailure(sender, remote, e, e.getMessage());
-		    chan = null;
-		    c = null;
-		}
-		if (c != null) {
-		    // app.addClient(c);
-		}
-
-	    }
-	};
+		true, null, Constants.USE_JSSE);
 	try {
 	    dhhelper.startListening();
 	} catch (IOException e) {
@@ -156,108 +63,109 @@ public final class TCPPortServerHandler {
 	}
     }
 
-    // AuthHandler for incoming
-    /** The authentication progress handler. */
-    private final AuthenticationProgressHandler authenticationProgressHandler = new AuthenticationProgressHandler() {
-	private RemoteTCPConnection conn = null;
-
-	@Override
-	public void AuthenticationFailure(final Object sender,
-		final Object remote, final Exception e, final String msg) {
-	    Log.d(this.toString(), "AuthFailure");
-	    attemptingClients.remove(remote);
-	}
-
-	@Override
-	public void AuthenticationProgress(final Object sender,
-		final Object remote, final int cur, final int max,
-		final String msg) {
-	    Log.d(this.toString(), "AuthProgress");
-	}
-
-	@Override
-	public boolean AuthenticationStarted(final Object sender,
-		final Object remote) {
-	    Log.d(this.toString(), "AuthStarted");
-
-	    attemptingClients.add((RemoteTCPConnection) remote);
-	    return true;
-	}
-
-	@Override
-	public void AuthenticationSuccess(final Object sender,
-		final Object remote, final Object result) {
-	    Log.d(this.toString(), "AuthSuccess");
-
-	    SecureChannel chan = null;
-	    RemoteTCPConnection con = null;
-	    RegisteredApp app = null;
-
-	    Object[] res = (Object[]) result;
-	    byte[] sharedSessionKey = (byte[]) res[0];
-	    final byte[] sharedOObMsg = (byte[]) res[1];
-
-	    Log.i("Client", new String(sharedSessionKey));
-	    Log.i("Client", new String(sharedOObMsg));
-
-	    Intent intent = new Intent(DiscoverService.context,
-		    VerificationQR.class);
-
-	    PendingIntent pendingIntent = PendingIntent.getActivity(
-		    DiscoverService.context, 0, intent,
-		    PendingIntent.FLAG_ONE_SHOT
-			    | PendingIntent.FLAG_CANCEL_CURRENT);
-
-	    Notification notif = new Notification(R.drawable.ic_dialog_alert,
-		    "verfication required", System.currentTimeMillis());
-	    notif.setLatestEventInfo(DiscoverService.context,
-		    "OpenUAT - Incoming connection",
-		    "Please verify the connection", pendingIntent);
-	    notif.flags = Notification.FLAG_NO_CLEAR
-		    | Notification.FLAG_AUTO_CANCEL;
-
-	    DiscoverService.mNotificationManager.notify(
-		    Constants.NOTIF_VERIFICATION_RESPONSE, notif);
-
-	    if (res.length > 2) {
-		Log.i("TCPPortServerHandler", (String) res[2]);
-	    }
-
-	    app = RegisteredAppManager.getServiceByName((String) res[2]);
-
-	    Client c = null;
-	    try {
-		con = (RemoteTCPConnection) remote;
-		chan = new SecureChannel(con);
-		c = app.getClientByRemoteObject(con);
-		if (c == null) {
-		    c = new Client();
-		    c.setRemote(con);
-		}
-		chan.setSessionKey(sharedSessionKey);
-		chan.setOobKey(sharedOObMsg);
-		chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
-		c.setSecureChannel(chan);
-
-	    } catch (final IOException e) {
-		AuthenticationFailure(sender, remote, e, e.getMessage());
-		chan = null;
-		c = null;
-	    }
-	    if (c != null) {
-		app.addClient(c);
-	    }
-	}
-    };
+    // // AuthHandler for incoming
+    // /** The authentication progress handler. */
+    // private final AuthenticationProgressHandler authenticationProgressHandler
+    // = new AuthenticationProgressHandler() {
+    // private RemoteTCPConnection conn = null;
+    //
+    // @Override
+    // public void AuthenticationFailure(final Object sender,
+    // final Object remote, final Exception e, final String msg) {
+    // Log.d(this.toString(), "AuthFailure");
+    // attemptingClients.remove(remote);
+    // }
+    //
+    // @Override
+    // public void AuthenticationProgress(final Object sender,
+    // final Object remote, final int cur, final int max,
+    // final String msg) {
+    // Log.d(this.toString(), "AuthProgress");
+    // }
+    //
+    // @Override
+    // public boolean AuthenticationStarted(final Object sender,
+    // final Object remote) {
+    // Log.d(this.toString(), "AuthStarted");
+    //
+    // attemptingClients.add((RemoteTCPConnection) remote);
+    // return true;
+    // }
+    //
+    // @Override
+    // public void AuthenticationSuccess(final Object sender,
+    // final Object remote, final Object result) {
+    // Log.d(this.toString(), "AuthSuccess");
+    //
+    // SecureChannel chan = null;
+    // RemoteTCPConnection con = null;
+    // RegisteredApp app = null;
+    //
+    // Object[] res = (Object[]) result;
+    // byte[] sharedSessionKey = (byte[]) res[0];
+    // final byte[] sharedOObMsg = (byte[]) res[1];
+    //
+    // Log.i("Client", new String(sharedSessionKey));
+    // Log.i("Client", new String(sharedOObMsg));
+    //
+    // Intent intent = new Intent(DiscoverService.context,
+    // VerificationQR.class);
+    //
+    // PendingIntent pendingIntent = PendingIntent.getActivity(
+    // DiscoverService.context, 0, intent,
+    // PendingIntent.FLAG_ONE_SHOT
+    // | PendingIntent.FLAG_CANCEL_CURRENT);
+    //
+    // Notification notif = new Notification(R.drawable.ic_dialog_alert,
+    // "verfication required", System.currentTimeMillis());
+    // notif.setLatestEventInfo(DiscoverService.context,
+    // "OpenUAT - Incoming connection",
+    // "Please verify the connection", pendingIntent);
+    // notif.flags = Notification.FLAG_NO_CLEAR
+    // | Notification.FLAG_AUTO_CANCEL;
+    //
+    // DiscoverService.mNotificationManager.notify(
+    // Constants.NOTIF_VERIFICATION_RESPONSE, notif);
+    //
+    // if (res.length > 2) {
+    // Log.i("TCPPortServerHandler", (String) res[2]);
+    // }
+    //
+    // app = RegisteredAppManager.getServiceByName((String) res[2]);
+    //
+    // Client c = null;
+    // try {
+    // con = (RemoteTCPConnection) remote;
+    // chan = new SecureChannel(con);
+    // c = app.getClientByRemoteObject(con);
+    // if (c == null) {
+    // c = new Client();
+    // c.setRemote(con);
+    // }
+    // chan.setSessionKey(sharedSessionKey);
+    // chan.setOobKey(sharedOObMsg);
+    // chan.setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
+    // c.setSecureChannel(chan);
+    //
+    // } catch (final IOException e) {
+    // AuthenticationFailure(sender, remote, e, e.getMessage());
+    // chan = null;
+    // c = null;
+    // }
+    // if (c != null) {
+    // app.addClient(c);
+    // }
+    // }
+    // };
 
     /**
      * Instantiates a new tCP port server handler.
      */
     private TCPPortServerHandler() {
 	Log.i(this.toString(), "starting tcpserver");
-	TCPPortServerHandler.tcpPortServer = new TCPPortServer(
-		Constants.TCP_PORT, Constants.PROTOCOL_TIMEOUT,
-		Constants.KEEP_CONNECTED, Constants.USE_JSSE);
+	tcpPortServer = new TCPPortServer(Constants.TCP_PORT,
+		Constants.PROTOCOL_TIMEOUT, Constants.KEEP_CONNECTED,
+		Constants.USE_JSSE);
 	// try {
 	// TCPPortServerHandler.tcpPortServer
 	// .addAuthenticationProgressHandler(authenticationProgressHandler);

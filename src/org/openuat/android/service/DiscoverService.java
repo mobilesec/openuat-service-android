@@ -75,7 +75,7 @@ public class DiscoverService extends Service {
 
 	    Client c = id.getApp().getClientById(id);
 	    try {
-		return c.openConnection();
+		return c.establishConnection();
 	    } catch (IOException e) {
 		e.printStackTrace();
 	    }
