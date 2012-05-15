@@ -12,7 +12,6 @@ package org.openuat.android.service;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
@@ -31,18 +30,14 @@ import android.util.Log;
  */
 public class SecureChannel extends Stub {
 
-    public static enum VERIFICATION_STATUS {
-	VERIFICATION_FAILED, VERIFICATION_PENDING, VERIFICATION_SUCCESS
-    };
+    private Client client;
 
     private static final int UPDATE_INTERVALL = 250;
     private RemoteCallbackList<IReceiverCallback> callbacks = null;
+    private boolean isValid = false;
 
     private BufferedInputStream inStream = null;
     private BufferedOutputStream outStream = null;
-
-    private VERIFICATION_STATUS verificationStatus = VERIFICATION_STATUS.VERIFICATION_PENDING;
-    private ArrayList<IVerificationStatusListener> verificationStatusListener = null;
 
     private byte[] sessionkey = null;
     private byte[] oobKey = null;
@@ -88,11 +83,20 @@ public class SecureChannel extends Stub {
 	    thisThread = Thread.currentThread();
 	    while (verificationTrigger == thisThread) {
 		if (DiscoverService.oob_key != null) {
-		    VERIFICATION_STATUS result = DiscoverService.oob_key
-			    .equalsIgnoreCase(Hash.getHexString(oobKey)) ? VERIFICATION_STATUS.VERIFICATION_SUCCESS
-			    : VERIFICATION_STATUS.VERIFICATION_FAILED;
+		    boolean result = DiscoverService.oob_key
+			    .equalsIgnoreCase(Hash.getHexString(oobKey));
 
-		    setVerificationStatus(result);
+		    if (result) {
+			verificationTrigger = null;
+			TCPPortServerHandler.getInstance().dhhelper
+				.verificationSuccess(remoteConnection, null,
+					client.getId().toString());
+		    } else {
+			TCPPortServerHandler.getInstance().dhhelper
+				.verificationFailure(true, remoteConnection,
+					null, client.getId().toString(),
+					new Exception(), "invalid OOB code");
+		    }
 		    DiscoverService.oob_key = null;
 		    verificationTrigger = null;
 		}
@@ -114,10 +118,12 @@ public class SecureChannel extends Stub {
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public SecureChannel(final RemoteConnection toRemote) throws IOException {
+    public SecureChannel(final RemoteConnection toRemote, Client client)
+	    throws IOException {
 	this.remoteConnection = toRemote;
 	callbacks = new RemoteCallbackList<IReceiverCallback>();
-	verificationStatusListener = new ArrayList<IVerificationStatusListener>();
+	this.client = client;
+	isValid = false;
     }
 
     /*
@@ -136,10 +142,6 @@ public class SecureChannel extends Stub {
 	verificationTrigger = null;
 	receiveTrigger = null;
 	super.finalize();
-    }
-
-    public VERIFICATION_STATUS getVerificationStatus() {
-	return verificationStatus;
     }
 
     /*
@@ -217,31 +219,6 @@ public class SecureChannel extends Stub {
 	return true;
     }
 
-    /**
-     * Sets the auth succeeded.
-     * 
-     * @param authSucceeded
-     *            the new auth succeeded
-     */
-    public void setVerificationStatus(final VERIFICATION_STATUS veriStatus) {
-	this.verificationStatus = veriStatus;
-	if (verificationStatus == VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
-	    setReceivePolling(true);
-	    setVerificationPolling(false);
-	} else if (verificationStatus == VERIFICATION_STATUS.VERIFICATION_PENDING) {
-	    setVerificationPolling(true);
-	} else {
-	    setReceivePolling(false);
-	    setVerificationPolling(false);
-	    remoteConnection = null;
-	}
-
-	for (IVerificationStatusListener listener : verificationStatusListener) {
-	    listener.onVerificationStatusChanged(verificationStatus);
-	}
-
-    }
-
     private void setReceivePolling(Boolean status) {
 	if (status) {
 	    receiveTrigger = receiveThread;
@@ -275,14 +252,6 @@ public class SecureChannel extends Stub {
 	callbacks.unregister(receiver);
     }
 
-    /**
-     * @param iAuthenticationStatusListener
-     */
-    public void setVerificationStatusListener(
-	    IVerificationStatusListener listener) {
-	verificationStatusListener.add(listener);
-    }
-
     public void setSessionKey(byte[] sessionKey) {
 	sessionkey = sessionKey;
     }
@@ -292,6 +261,34 @@ public class SecureChannel extends Stub {
      */
     public void setOobKey(byte[] oobKey) {
 	this.oobKey = oobKey;
+    }
+
+    /**
+     * @return
+     */
+    public boolean isValid() {
+	return isValid;
+    }
+
+    public void setValid(boolean status) {
+	isValid = status;
+	if (isValid) {
+	    setVerificationPolling(false);
+	    setReceivePolling(true);
+	} else {
+	    setVerificationPolling(false);
+	    setReceivePolling(false);
+	    oobKey = null;
+	    sessionkey = null;
+	}
+    }
+
+    /**
+     * @param sharedAuthenticationKey
+     */
+    public void startVerification(byte[] sharedAuthenticationKey) {
+	oobKey = sharedAuthenticationKey;
+	setVerificationPolling(true);
     }
 
 }

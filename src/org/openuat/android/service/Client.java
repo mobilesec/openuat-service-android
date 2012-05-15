@@ -15,10 +15,10 @@ import java.net.Socket;
 
 import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
-import org.openuat.android.service.SecureChannel.VERIFICATION_STATUS;
 import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.authentication.AuthenticationProgressHandler;
+import org.openuat.authentication.DHWithVerification;
 import org.openuat.authentication.HostProtocolHandler;
 import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
@@ -36,7 +36,7 @@ import android.util.Log;
  * 
  * @author Hannes Markschlaeger
  */
-public class Client implements IVerificationStatusListener {
+public class Client {
 
     private RemoteConnection remote = null;
     private SecureChannel secureChannel = null;
@@ -140,10 +140,16 @@ public class Client implements IVerificationStatusListener {
 
 	    DiscoverService.mNotificationManager.notify(
 		    Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
+	    
 
+	    // TCPPortServerHandler.getInstance().dhhelper.startVerificationAsync(
+	    // sharedOObMsg, null, Client.this.remote);
+//	    TCPPortServerHandler.getInstance().dhhelper.verificationSuccess(
+//		    Client.this.remote, null, id.getApp().getLocalId()
+//			    .toString());
 	    // TODO get from partner when verification was succesfull!
-	    secureChannel
-		    .setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
+	    // secureChannel
+	    // .setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
 	}
     };
 
@@ -163,39 +169,30 @@ public class Client implements IVerificationStatusListener {
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public SecureChannel openConnection() throws IOException {
+    public SecureChannel establishConnection() throws IOException {
 	Log.d(this.toString(), "openConnection");
-	// Log.d(this.toString(), remote.toString());
-	//
-	// if ((secureChannel != null)
-	// && secureChannel.getVerificationStatus() ==
-	// VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
-	// return secureChannel;
-	// }
-	// Log.d(this.toString(), "opening sockets");
-	//
-	// secureChannel = new SecureChannel(remote);
-	// HostProtocolHandler.startAuthenticationWith(remote,
-	// authenticationHandler, -1, true, RegisteredAppManager
-	// .getServiceOfClient(this).getName(), true);
-	// return secureChannel;
 
 	Log.d(this.toString(), "openConnection");
 	InetAddress adress = TCP.getAvailableClients().get(id);
-	if ((secureChannel != null)
-		&& secureChannel.getVerificationStatus() == VERIFICATION_STATUS.VERIFICATION_SUCCESS) {
-	    Log.d(this.toString(), "channel present");
+	if ((secureChannel != null) && secureChannel.isValid()) {
+	    Log.d(this.toString(), "valid channel present");
 	    return secureChannel;
 	}
 	Log.d(this.toString(), "no channel found - creating new one");
 	RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
 		Constants.TCP_PORT));
 	setRemote(con);
-	setSecureChannel(new SecureChannel(con));
+	setSecureChannel(new SecureChannel(con, this));
+
 	HostProtocolHandler.startAuthenticationWith(getRemoteObject(),
 		authenticationHandler, Constants.PROTOCOL_TIMEOUT,
 		Constants.KEEP_CONNECTED, id.getApp().getLocalId().toString(),
 		Constants.USE_JSSE);
+
+	TCPPortServerHandler.getInstance().dhhelper.
+	// TCPPortServerHandler.getInstance().dhhelper.startAuthentication(
+	// getRemoteObject(), Constants.PROTOCOL_TIMEOUT, id.getApp()
+	// .getLocalId().toString());
 	return secureChannel;
 
     }
@@ -270,21 +267,4 @@ public class Client implements IVerificationStatusListener {
 	return isLocalClient;
     }
 
-    @Override
-    public void onVerificationStatusChanged(VERIFICATION_STATUS newStatus) {
-	switch (newStatus) {
-	case VERIFICATION_FAILED:
-	    // TODO inform partner when verification was successful!
-	    Log.i("Client", "VERIFICATION_FAILED");
-	    secureChannel = null;
-	    break;
-	case VERIFICATION_PENDING:
-	    break;
-	case VERIFICATION_SUCCESS:
-	    break;
-	default:
-	    break;
-	}
-
-    }
 }

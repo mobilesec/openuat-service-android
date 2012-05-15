@@ -57,37 +57,14 @@ public class DiscoverService extends Service {
 		final String device) throws RemoteException {
 	    Log.i(this.toString(), "authenticate" + device);
 
-	    // final String[] s = device.split("/");
-	    //
-	    // InetAddress ad = null;
-	    // try {
-	    // ad = InetAddress.getByName(s[s.length - 1]);
-	    // Log.d(this.toString(), ad.toString());
-	    // } catch (final UnknownHostException e1) {
-	    // e1.printStackTrace();
-	    // }
-	    //
-	    // if (ad.equals(Util.getipAddress())) {
-	    // throw new RemoteException();
-	    // }
-
 	    OpenUAT_ID id = OpenUAT_ID.parseToken(device);
 
 	    Client c = id.getApp().getClientById(id);
 	    try {
-		return c.openConnection();
+		return c.establishConnection();
 	    } catch (IOException e) {
 		e.printStackTrace();
 	    }
-
-	    // SecureChannel chan = null;
-	    // try {
-	    // chan = RegisteredAppManager.getServiceByName(serviceId)
-	    // .getClientById(adress).openConnection();
-	    //
-	    // } catch (final IOException e) {
-	    // throw new RemoteException();
-	    // }
 	    return null;
 	}
 
