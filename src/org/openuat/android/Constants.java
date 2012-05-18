@@ -40,4 +40,6 @@ public final class Constants {
     public static final boolean USE_JSSE = true;
     public static final int PROTOCOL_TIMEOUT = -1;
     public static final boolean KEEP_CONNECTED = true;
+    
+    public static final int POLLING_INTERVALL = 250;
 }

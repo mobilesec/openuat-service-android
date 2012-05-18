@@ -119,26 +119,8 @@ public class RegisteredApp {
 	return isDiscovering;
     }
 
-    // /**
-    // * On message received.
-    // *
-    // * @param recControl
-    // * the rec control
-    // * @param recMessage
-    // * the rec message
-    // */
-    // public void onMessageReceived(final String recControl,
-    // final String recMessage) {
-    //
-    // }
     public Client getClientById(final OpenUAT_ID id) {
 	Log.d(this.toString(), "getClientById " + id.toString());
-	// for (final Client c : mClients) {
-	// if (c.getAdress().equals(id)) {
-	// Log.d(this.toString(), "client found " + c.toString());
-	// return c;
-	// }
-	// }
 	for (final Client c : mClients) {
 	    if (c.getId().equals(id)) {
 		Log.d(this.toString(), "client found " + c.toString());

@@ -17,17 +17,9 @@ import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
-import org.openuat.authentication.AuthenticationProgressHandler;
-import org.openuat.authentication.DHWithVerification;
-import org.openuat.authentication.HostProtocolHandler;
 import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
-import org.openuat.util.Hash;
 
-import android.R;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.content.Intent;
 import android.util.Log;
 
 /**
@@ -41,10 +33,6 @@ public class Client {
     private RemoteConnection remote = null;
     private SecureChannel secureChannel = null;
 
-    public AuthenticationProgressHandler getAuthenticationHandler() {
-	return authenticationHandler;
-    }
-
     private IConnectionCallback connectionCallback = null;
     private boolean isLocalClient = false;
     private OpenUAT_ID id;
@@ -53,9 +41,6 @@ public class Client {
 	return id;
     }
 
-    /**
-     * Instantiates a new client.
-     */
     public Client() {
     }
 
@@ -81,96 +66,11 @@ public class Client {
 	this.id = id;
     }
 
-    /** The authentication handler. */
-    public final AuthenticationProgressHandler authenticationHandler = new AuthenticationProgressHandler() {
-
-	@Override
-	public void AuthenticationFailure(final Object sender,
-		final Object remote, final Exception e, final String msg) {
-	    Log.d(this.toString(), "AuthFailure");
-	    secureChannel = null;
-	}
-
-	@Override
-	public void AuthenticationProgress(final Object sender,
-		final Object remote, final int cur, final int max,
-		final String msg) {
-	    Log.d(this.toString(), "AuthProgress");
-
-	}
-
-	@Override
-	public boolean AuthenticationStarted(final Object sender,
-		final Object remote) {
-	    Log.d(this.toString(), "AuthStarted");
-	    return true;
-	}
-
-	@Override
-	public void AuthenticationSuccess(final Object sender,
-		final Object remote, final Object result) {
-	    Log.d(this.toString(), "AuthSuccess");
-
-	    Object[] res = (Object[]) result;
-	    byte[] sharedSessionKey = (byte[]) res[0];
-	    byte[] sharedOObMsg = (byte[]) res[1];
-
-	    secureChannel.setSessionKey(sharedSessionKey);
-	    secureChannel.setOobKey(sharedOObMsg);
-
-	    Intent intent = new Intent("com.google.zxing.client.android.ENCODE");
-	    intent.putExtra("ENCODE_TYPE", "TEXT_TYPE");
-	    intent.putExtra("ENCODE_DATA", Hash.getHexString(sharedOObMsg));
-	    intent.putExtra("ENCODE_SHOW_CONTENTS", true);
-
-	    Notification notif = new Notification(R.drawable.ic_dialog_alert,
-		    "Verification required", System.currentTimeMillis());
-
-	    PendingIntent pendingIntent = PendingIntent.getActivity(
-		    DiscoverService.context, 0, intent,
-		    PendingIntent.FLAG_CANCEL_CURRENT
-			    | PendingIntent.FLAG_ONE_SHOT);
-
-	    notif.setLatestEventInfo(DiscoverService.context,
-		    "OpenUAT - Opening connection",
-		    "This code has to be verified by the other side",
-		    pendingIntent);
-	    notif.flags = Notification.FLAG_NO_CLEAR
-		    | Notification.FLAG_AUTO_CANCEL;
-
-	    DiscoverService.mNotificationManager.notify(
-		    Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
-	    
-
-	    // TCPPortServerHandler.getInstance().dhhelper.startVerificationAsync(
-	    // sharedOObMsg, null, Client.this.remote);
-//	    TCPPortServerHandler.getInstance().dhhelper.verificationSuccess(
-//		    Client.this.remote, null, id.getApp().getLocalId()
-//			    .toString());
-	    // TODO get from partner when verification was succesfull!
-	    // secureChannel
-	    // .setVerificationStatus(VERIFICATION_STATUS.VERIFICATION_PENDING);
-	}
-    };
-
-    /**
-     * Gets the adress.
-     * 
-     * @return the adress
-     */
     public RemoteConnection getRemoteObject() {
 	return remote;
     }
 
-    /**
-     * Open connection.
-     * 
-     * @return the secure channel
-     * @throws IOException
-     *             Signals that an I/O exception has occurred.
-     */
     public SecureChannel establishConnection() throws IOException {
-	Log.d(this.toString(), "openConnection");
 
 	Log.d(this.toString(), "openConnection");
 	InetAddress adress = TCP.getAvailableClients().get(id);
@@ -184,35 +84,17 @@ public class Client {
 	setRemote(con);
 	setSecureChannel(new SecureChannel(con, this));
 
-	HostProtocolHandler.startAuthenticationWith(getRemoteObject(),
-		authenticationHandler, Constants.PROTOCOL_TIMEOUT,
-		Constants.KEEP_CONNECTED, id.getApp().getLocalId().toString(),
-		Constants.USE_JSSE);
-
-	TCPPortServerHandler.getInstance().dhhelper.
-	// TCPPortServerHandler.getInstance().dhhelper.startAuthentication(
-	// getRemoteObject(), Constants.PROTOCOL_TIMEOUT, id.getApp()
-	// .getLocalId().toString());
+	// TODO
+	DHwithVerificationHelper.getInstance().startAuthentication(
+		getRemoteObject(), Constants.PROTOCOL_TIMEOUT, id.toString());
 	return secureChannel;
 
     }
 
-    /**
-     * Sets the adress.
-     * 
-     * @param adress
-     *            the new adress
-     */
     public void setRemote(final RemoteConnection adress) {
 	this.remote = adress;
     }
 
-    /**
-     * Sets the connection.
-     * 
-     * @param channel
-     *            the new connection
-     */
     public void setSecureChannel(final SecureChannel channel) {
 	secureChannel = channel;
     }
@@ -221,26 +103,30 @@ public class Client {
 	return secureChannel;
     }
 
-    @Override
-    public String toString() {
-	StringBuilder builder = new StringBuilder();
-	builder.append(id);
-	return builder.toString();
-    }
-
-    /**
-     * @return the connectionCallback
-     */
     public IConnectionCallback getConnectionCallback() {
 	return connectionCallback;
     }
 
-    /**
-     * @param connectionCallback
-     *            the connectionCallback to set
-     */
     public void setConnectionCallback(IConnectionCallback connectionCallback) {
 	this.connectionCallback = connectionCallback;
+    }
+
+    public boolean isLocalClient() {
+	return isLocalClient;
+    }
+
+    public void reset() {
+	remote = null;
+	secureChannel = null;
+    }
+
+    @Override
+    public int hashCode() {
+	final int prime = 31;
+	int result = 1;
+	result = prime * result + ((id == null) ? 0 : id.hashCode());
+	result = prime * result + ((remote == null) ? 0 : remote.hashCode());
+	return result;
     }
 
     @Override
@@ -252,6 +138,11 @@ public class Client {
 	if (!(obj instanceof Client))
 	    return false;
 	Client other = (Client) obj;
+	if (id == null) {
+	    if (other.id != null)
+		return false;
+	} else if (!id.equals(other.id))
+	    return false;
 	if (remote == null) {
 	    if (other.remote != null)
 		return false;
@@ -260,11 +151,9 @@ public class Client {
 	return true;
     }
 
-    /**
-     * @return
-     */
-    public boolean isLocalClient() {
-	return isLocalClient;
+    @Override
+    public String toString() {
+	return id.toString();
     }
 
 }

@@ -43,11 +43,10 @@ public class DiscoverService extends Service {
 	Log.i("DiscoverService", "ctor");
 
 	try {
-	    Thread.sleep(5000);
-	} catch (InterruptedException e) {
+	    DHwithVerificationHelper.getInstance();
+	} catch (IOException e) {
 	    e.printStackTrace();
 	}
-	TCPPortServerHandler tcpHandler = TCPPortServerHandler.getInstance();
     }
 
     /** The device authenticator. */
@@ -104,13 +103,6 @@ public class DiscoverService extends Service {
 		    IConnectionType.CONNECTION_TYPE.WIFI);
 	    RegisteredAppManager.registerService(app);
 
-	    // try {
-	    // app.addClient(new Client(new RemoteTCPConnection(new Socket(
-	    // Util.getipAddress(), Constants.TCP_PORT)),
-	    // connectionCallback));
-	    // } catch (IOException e) {
-	    // e.printStackTrace();
-	    // }
 	    Log.i(this.toString(), app + " registered");
 	}
 

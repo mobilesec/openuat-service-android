@@ -13,6 +13,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 
+import org.openuat.android.Constants;
 import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
 import org.openuat.channel.main.RemoteConnection;
@@ -32,7 +33,6 @@ public class SecureChannel extends Stub {
 
     private Client client;
 
-    private static final int UPDATE_INTERVALL = 250;
     private RemoteCallbackList<IReceiverCallback> callbacks = null;
     private boolean isValid = false;
 
@@ -63,7 +63,7 @@ public class SecureChannel extends Stub {
 			}
 			callbacks.finishBroadcast();
 		    } else {
-			Thread.sleep(UPDATE_INTERVALL);
+			Thread.sleep(Constants.POLLING_INTERVALL);
 		    }
 		} catch (final RemoteException e) {
 		    e.printStackTrace();
@@ -88,20 +88,30 @@ public class SecureChannel extends Stub {
 
 		    if (result) {
 			verificationTrigger = null;
-			TCPPortServerHandler.getInstance().dhhelper
-				.verificationSuccess(remoteConnection, null,
-					client.getId().toString());
+			try {
+			    DHwithVerificationHelper.getInstance()
+				    .verificationSuccess(remoteConnection,
+					    null, client.getId().toString());
+			} catch (IOException e) {
+			    e.printStackTrace();
+			}
 		    } else {
-			TCPPortServerHandler.getInstance().dhhelper
-				.verificationFailure(true, remoteConnection,
-					null, client.getId().toString(),
-					new Exception(), "invalid OOB code");
+			try {
+			    DHwithVerificationHelper
+				    .getInstance()
+				    .verificationFailure(true,
+					    remoteConnection, null,
+					    client.getId().toString(),
+					    new Exception(), "invalid OOB code");
+			} catch (IOException e) {
+			    e.printStackTrace();
+			}
 		    }
 		    DiscoverService.oob_key = null;
 		    verificationTrigger = null;
 		}
 		try {
-		    Thread.sleep(UPDATE_INTERVALL);
+		    Thread.sleep(Constants.POLLING_INTERVALL);
 		} catch (InterruptedException e) {
 		    e.printStackTrace();
 		}
@@ -126,11 +136,6 @@ public class SecureChannel extends Stub {
 	isValid = false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see android.os.Binder#finalize()
-     */
     @Override
     protected void finalize() throws Throwable {
 	if (inStream != null) {
@@ -144,11 +149,6 @@ public class SecureChannel extends Stub {
 	super.finalize();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.openuat.service.ISecureChannel#receive()
-     */
     @Override
     public byte[] receive() throws RemoteException {
 	int len = 0;
@@ -181,24 +181,12 @@ public class SecureChannel extends Stub {
 	return data;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.openuat.service.ISecureChannel#registerReceiveHandler(org.openuat
-     * .service.IReceiverCallback)
-     */
     @Override
     public void registerReceiveHandler(final IReceiverCallback receiver)
 	    throws RemoteException {
 	callbacks.register(receiver);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.openuat.service.ISecureChannel#send(byte[])
-     */
     @Override
     public boolean send(final byte[] data) throws RemoteException {
 	if (remoteConnection != null) {
@@ -239,13 +227,6 @@ public class SecureChannel extends Stub {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.openuat.service.ISecureChannel#unregisterReceiveHandler(org.openuat
-     * .service.IReceiverCallback)
-     */
     @Override
     public void unregisterReceiveHandler(final IReceiverCallback receiver)
 	    throws RemoteException {
@@ -256,16 +237,10 @@ public class SecureChannel extends Stub {
 	sessionkey = sessionKey;
     }
 
-    /**
-     * @param oobKey
-     */
     public void setOobKey(byte[] oobKey) {
 	this.oobKey = oobKey;
     }
 
-    /**
-     * @return
-     */
     public boolean isValid() {
 	return isValid;
     }
@@ -283,9 +258,6 @@ public class SecureChannel extends Stub {
 	}
     }
 
-    /**
-     * @param sharedAuthenticationKey
-     */
     public void startVerification(byte[] sharedAuthenticationKey) {
 	oobKey = sharedAuthenticationKey;
 	setVerificationPolling(true);
