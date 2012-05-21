@@ -59,6 +59,7 @@ public class ReceiveEventWrapper {
 	 */
 	@Override
 	public void run() {
+	    // TODO unnecessary because chopping files into chunks can only be done by the app itself
 	    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 	    byte[] data = null;
 	    while (mStream != null) {

@@ -120,10 +120,8 @@ public class RegisteredApp {
     }
 
     public Client getClientById(final OpenUAT_ID id) {
-	Log.d(this.toString(), "getClientById " + id.toString());
 	for (final Client c : mClients) {
 	    if (c.getId().equals(id)) {
-		Log.d(this.toString(), "client found " + c.toString());
 		return c;
 	    }
 	}
@@ -132,14 +130,11 @@ public class RegisteredApp {
     }
 
     public Client getClientByRemoteObject(final RemoteConnection remote) {
-	Log.d(this.toString(), "getClientByRemoteObject " + remote.toString());
 	for (final Client c : mClients) {
 	    if (c.getRemoteObject().equals(remote)) {
-		Log.d(this.toString(), "client found " + c.toString());
 		return c;
 	    }
 	}
-	Log.d(this.toString(), "no client found");
 	return null;
     }
 
@@ -161,14 +156,26 @@ public class RegisteredApp {
 	return mName;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
 	final int prime = 31;
 	int result = 1;
+	result = prime * result
+		+ ((mConnection == null) ? 0 : mConnection.hashCode());
 	result = prime * result + ((mName == null) ? 0 : mName.hashCode());
 	return result;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
     @Override
     public boolean equals(Object obj) {
 	if (this == obj)
@@ -178,6 +185,8 @@ public class RegisteredApp {
 	if (!(obj instanceof RegisteredApp))
 	    return false;
 	RegisteredApp other = (RegisteredApp) obj;
+	if (mConnection != other.mConnection)
+	    return false;
 	if (mName == null) {
 	    if (other.mName != null)
 		return false;

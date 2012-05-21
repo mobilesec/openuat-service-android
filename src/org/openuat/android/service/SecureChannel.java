@@ -120,6 +120,19 @@ public class SecureChannel extends Stub {
 	}
     });
 
+    private volatile Thread keepAliveTrigger = null;
+    private final Thread keepAliveThread = new Thread(new Runnable() {
+	Thread thisThread = null;
+
+	@Override
+	public void run() {
+	    thisThread = Thread.currentThread();
+	    while (keepAliveTrigger == thisThread) {
+		// TODO keepalive / check
+	    }
+	}
+    });
+
     /**
      * Instantiates a new secure channel.
      * 
@@ -137,16 +150,13 @@ public class SecureChannel extends Stub {
     }
 
     @Override
-    protected void finalize() throws Throwable {
-	if (inStream != null) {
-	    inStream.close();
+    protected void finalize() {
+	try {
+	    close();
+	    super.finalize();
+	} catch (Throwable e) {
+	    e.printStackTrace();
 	}
-	if (outStream != null) {
-	    outStream.close();
-	}
-	verificationTrigger = null;
-	receiveTrigger = null;
-	super.finalize();
     }
 
     @Override
@@ -166,8 +176,8 @@ public class SecureChannel extends Stub {
 	    } catch (NumberFormatException e) {
 		return null;
 	    }
-	    Log.d(this.toString(), "receiving ");
 	    if (len > 0) {
+		Log.i(this.toString(), "receiving bytes: " + len);
 		data = new byte[len];
 		inStream.read(data, 0, data.length);
 	    }
@@ -261,6 +271,20 @@ public class SecureChannel extends Stub {
     public void startVerification(byte[] sharedAuthenticationKey) {
 	oobKey = sharedAuthenticationKey;
 	setVerificationPolling(true);
+    }
+
+    private void close() throws IOException {
+	if (inStream != null) {
+	    inStream.close();
+	}
+	if (outStream != null) {
+	    outStream.close();
+	}
+	remoteConnection = null;
+	verificationTrigger = null;
+	receiveTrigger = null;
+	keepAliveTrigger = null;
+	isValid = false;
     }
 
 }

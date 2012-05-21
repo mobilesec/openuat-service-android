@@ -22,9 +22,8 @@ import org.openuat.util.Hash;
 public class OpenUAT_ID {
 
     private CONNECTION_TYPE connection_type;
-    private RegisteredApp app;
-    private String androidId;
-
+    private RegisteredApp app = null;
+    private String androidId = null;
     private String hash = null;
 
     /**

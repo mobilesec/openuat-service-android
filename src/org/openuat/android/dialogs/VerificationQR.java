@@ -24,9 +24,6 @@ import android.util.Log;
  */
 public class VerificationQR extends Activity {
 
-    public static final String KEY_OOB = "oob_message";
-    protected static final int ID = 200;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 	super.onCreate(savedInstanceState);
@@ -51,6 +48,7 @@ public class VerificationQR extends Activity {
 		    @Override
 		    public void onClick(DialogInterface dialog, int which) {
 			dialog.cancel();
+			DiscoverService.oob_key = "fail";
 			VerificationQR.this.finish();
 		    }
 		});
@@ -73,5 +71,16 @@ public class VerificationQR extends Activity {
 	    finish();
 	}
 
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see android.app.Activity#onBackPressed()
+     */
+    @Override
+    public void onBackPressed() {
+	  DiscoverService.oob_key = "back";
+	  finish();
     }
 }

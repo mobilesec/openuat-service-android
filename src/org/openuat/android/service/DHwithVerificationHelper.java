@@ -28,7 +28,6 @@ import android.util.Log;
 public class DHwithVerificationHelper extends DHWithVerification {
 
     private static DHwithVerificationHelper instance = null;
-    private static TCPPortServer tcpPortServer;
 
     public static DHwithVerificationHelper getInstance() throws IOException {
 	if (DHwithVerificationHelper.instance == null) {
@@ -138,15 +137,10 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	    channel = new SecureChannel(toRemote, c);
 	    c.setRemote(toRemote);
 	    c.setSecureChannel(channel);
-	    // TODO #####
 	    channel.startVerification(sharedAuthenticationKey);
 	} catch (final IOException e) {
 	    channel = null;
 	    c = null;
-	}
-
-	if (c != null) {
-	    // app.addClient(c);
 	}
 
     }
@@ -164,7 +158,8 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
 	Client c = id.getApp().getClientById(id);
 	if (c == null) {
-	    Log.e(this.toString(), "protocolSucceededHook - no client found!!");
+	    Log.e(this.toString(),
+		    "protocolSucceededHook - no client found!! Should never happen!");
 	    verificationFailure(true, remote, optionalVerificationId,
 		    optionalParameterFromRemote, null,
 		    "remote object not found");
@@ -180,6 +175,9 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	    RemoteConnection remote, Object optionalVerificationId,
 	    Exception e, String message) {
 	Log.i(this.toString(), "protocolFailedHook");
+
+	// where is optionalParameterFromRemote?
+
     }
 
     @Override

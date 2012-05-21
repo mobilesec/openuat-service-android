@@ -173,48 +173,18 @@ public final class TCP implements IConnectionType, MessageListener {
 					    .getBytes(), sentFrom);
 			}
 		    }
-		} catch (final IOException e) { 
+		} catch (final IOException e) {
 		    e.printStackTrace();
 		}
 	    } else if (recControl.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
 		OpenUAT_ID id = OpenUAT_ID.parseToken(recApp);
 		final Client c = new Client(id);
 		id.getApp().addClient(c);
-		boolean check = availableClients.containsKey(id);
-		if (!check) {
+		if (!availableClients.containsKey(id)) {
 		    availableClients.put(id, sentFrom);
 		}
 	    }
-
-	    // for (final RegisteredApp app : TCP.mServices) {
-	    // // Get corresponding app
-	    // if (app.getName().equalsIgnoreCase(recApp)) {
-	    // // Challenge received? -> respond!
-	    // if (recControl
-	    // .equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
-	    // try {
-	    // TCP.mUdpMultiSock
-	    // .sendTo((app.getLocalId().toString()
-	    // + Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
-	    // .getBytes(), sentFrom);
-	    // } catch (final IOException e) {
-	    // e.printStackTrace();
-	    // }
-	    // } else if (recControl
-	    // .equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
-	    // OpenUAT_ID id = OpenUAT_ID.parseToken(recApp);
-	    // Log.i(this.toString(),
-	    // "Respond received from " + id.toString());
-	    // final Client c = new Client(id);
-	    // // c.setAdress(null);
-	    // app.addClient(c);
-	    // availableClients.put(id, sentFrom);
-	    // }
-	    // return;
-	    // }
 	}
-	// }
-
     }
 
     /*

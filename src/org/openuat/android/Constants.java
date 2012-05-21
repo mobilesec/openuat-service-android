@@ -8,16 +8,9 @@
  */
 package org.openuat.android;
 
-
 public final class Constants {
     public static final int NOTIF_VERIFICATION_CHALLENGE = 100;
     public static final int NOTIF_VERIFICATION_RESPONSE = 101;
-
-    /** The Constant BEGIN_TAG. */
-    public static final String BEGIN_TAG = "<BEGIN>";
-
-    /** The Constant CONNECTION_ATTEMPT. */
-    public static final String CONNECTION_ATTEMPT = "CONNECTION_ATTEMPT";
 
     /** The Constant DISCOVER_CHALLENGE. */
     public static final String DISCOVER_CHALLENGE = "DISCOVER_CHALLENGE";
@@ -36,10 +29,9 @@ public final class Constants {
 
     /** The Constant UDP_PORT. */
     public static final int UDP_PORT = 6969;
-    
+
     public static final boolean USE_JSSE = true;
     public static final int PROTOCOL_TIMEOUT = -1;
     public static final boolean KEEP_CONNECTED = true;
-    
     public static final int POLLING_INTERVALL = 250;
 }
