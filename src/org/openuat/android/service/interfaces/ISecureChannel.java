@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\hannes.m\\Desktop\\bac\\openuat_service\\src\\org\\openuat\\android\\service\\interfaces\\ISecureChannel.aidl
+ * Original file: C:\\Users\\Hannes\\SkyDrive\\Documents\\FH\\Sem5\\OpenUAT\\openuat-service-android\\src\\org\\openuat\\android\\service\\interfaces\\ISecureChannel.aidl
  */
 package org.openuat.android.service.interfaces;
 @SuppressWarnings("all")

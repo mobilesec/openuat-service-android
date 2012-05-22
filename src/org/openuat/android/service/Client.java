@@ -19,7 +19,9 @@ import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
+import org.openuat.util.Hash;
 
+import android.os.RemoteException;
 import android.util.Log;
 
 /**
@@ -33,9 +35,10 @@ public class Client {
     private RemoteConnection remote = null;
     private SecureChannel secureChannel = null;
 
-    private IConnectionCallback connectionCallback = null;
     private boolean isLocalClient = false;
     private OpenUAT_ID id;
+
+    private byte[] oobKey = null;
 
     public final OpenUAT_ID getId() {
 	return id;
@@ -46,23 +49,15 @@ public class Client {
 
     public Client(RemoteConnection adress,
 	    IConnectionCallback connectionCallback) {
-	this.remote = adress;
-	this.connectionCallback = connectionCallback;
-	try {
-	    isLocalClient = ((InetAddress) adress.getRemoteAddress())
-		    .toString().equalsIgnoreCase(
-			    Util.getipAddress().getHostAddress());
-	} catch (IOException e) {
-	    isLocalClient = false;
-	    e.printStackTrace();
-	}
-
+	this();
+	setRemote(adress);
     }
 
     /**
      * @param id
      */
     public Client(OpenUAT_ID id) {
+	this();
 	this.id = id;
     }
 
@@ -70,54 +65,46 @@ public class Client {
 	return remote;
     }
 
-    public SecureChannel establishConnection() throws IOException {
+    public void establishConnection() throws IOException {
 
 	Log.d(this.toString(), "openConnection");
 	InetAddress adress = TCP.getAvailableClients().get(id);
-	if ((secureChannel != null) && secureChannel.isValid()) {
+	if (secureChannel != null) {
 	    Log.d(this.toString(), "valid channel present");
-	    return secureChannel;
 	}
 	Log.d(this.toString(), "no channel found - creating new one");
 	RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
 		Constants.TCP_PORT));
 	setRemote(con);
-	setSecureChannel(new SecureChannel(con, this));
 
 	// TODO
 	DHwithVerificationHelper.getInstance().startAuthentication(
 		getRemoteObject(), Constants.PROTOCOL_TIMEOUT, id.toString());
-	return secureChannel;
-
     }
+
+   
 
     public void setRemote(final RemoteConnection adress) {
 	this.remote = adress;
+//	checkIfLocal();
     }
 
-    public void setSecureChannel(final SecureChannel channel) {
+    public void setSecureChannel(final SecureChannel channel) throws RemoteException {
 	secureChannel = channel;
+	id.getApp().publishChannel(this);
     }
 
     public final SecureChannel getSecureChannel() {
 	return secureChannel;
     }
 
-    public IConnectionCallback getConnectionCallback() {
-	return connectionCallback;
-    }
-
-    public void setConnectionCallback(IConnectionCallback connectionCallback) {
-	this.connectionCallback = connectionCallback;
-    }
-
     public boolean isLocalClient() {
 	return isLocalClient;
     }
 
-    public void reset() {
-	remote = null;
-	secureChannel = null;
+    public void reset() throws RemoteException {
+	setRemote(null);
+	setSecureChannel(null);
     }
 
     @Override
@@ -154,6 +141,83 @@ public class Client {
     @Override
     public String toString() {
 	return id.toString();
+    }
+
+    private volatile Thread verificationTrigger = null;
+    private final Thread verificationThread = new Thread(new Runnable() {
+	Thread thisThread = null;
+
+	@Override
+	public void run() {
+	    thisThread = Thread.currentThread();
+	    while (verificationTrigger == thisThread) {
+		if (DiscoverService.oob_key != null) {
+		    boolean result = DiscoverService.oob_key
+			    .equalsIgnoreCase(Hash.getHexString(oobKey));
+
+		    if (result) {
+			verificationTrigger = null;
+			try {
+			    DHwithVerificationHelper.getInstance()
+				    .verificationSuccess(remote, this,
+					    getId().toString());
+			} catch (IOException e) {
+			    e.printStackTrace();
+			}
+		    } else {
+			try {
+			    DHwithVerificationHelper
+				    .getInstance()
+				    .verificationFailure(true, remote, this,
+					    getId().toString(),
+					    new Exception(), "invalid OOB code");
+			} catch (IOException e) {
+			    e.printStackTrace();
+			}
+		    }
+		    DiscoverService.oob_key = null;
+		    verificationTrigger = null;
+		}
+		try {
+		    Thread.sleep(Constants.POLLING_INTERVALL);
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		}
+	    }
+
+	}
+    });
+
+    public void startVerification(byte[] sharedAuthenticationKey) {
+	oobKey = sharedAuthenticationKey;
+	setVerificationPolling(true);
+    }
+
+    private void setVerificationPolling(Boolean status) {
+	if (status) {
+	    verificationTrigger = verificationThread;
+	    verificationThread.start();
+	} else {
+	    verificationTrigger = null;
+	}
+    }
+
+    /**
+     * @param sharedAuthenticationKey
+     */
+    public void setOobKey(byte[] sharedAuthenticationKey) {
+	oobKey = sharedAuthenticationKey;
+    }
+
+    /**
+     * @param localId
+     * @return
+     */
+    public static Client createLocalClient(OpenUAT_ID localId) {
+	Client client = new Client();
+	client.id = localId;
+	client.isLocalClient = true;
+	return client;
     }
 
 }

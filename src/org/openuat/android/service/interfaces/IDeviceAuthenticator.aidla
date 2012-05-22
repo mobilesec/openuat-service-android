@@ -56,5 +56,5 @@ interface IDeviceAuthenticator {
 	 * On success, an instance of ISecureChannel is returned. 
 	 * On failure, null is returned.
 	 */
-	ISecureChannel authenticate(in String serviceId, in String device);	
+	void authenticate(in String serviceId, in String device);	
 }

@@ -68,7 +68,6 @@ public class VerificationQR extends Activity {
 		Log.i("scanresult", key);
 	    }
 	    DiscoverService.oob_key = key;
-	    finish();
 	}
 
     }
@@ -80,7 +79,6 @@ public class VerificationQR extends Activity {
      */
     @Override
     public void onBackPressed() {
-	  DiscoverService.oob_key = "back";
-	  finish();
+	DiscoverService.oob_key = "back";
     }
 }

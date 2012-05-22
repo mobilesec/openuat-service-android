@@ -23,6 +23,7 @@ import android.R;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.os.RemoteException;
 import android.util.Log;
 
 public class DHwithVerificationHelper extends DHWithVerification {
@@ -35,9 +36,9 @@ public class DHwithVerificationHelper extends DHWithVerification {
 		    new TCPPortServer(Constants.TCP_PORT,
 			    Constants.PROTOCOL_TIMEOUT,
 			    Constants.KEEP_CONNECTED, Constants.USE_JSSE),
-		    true, true, false, null, Constants.USE_JSSE);
+		    true, true, true, null, Constants.USE_JSSE);
+	    instance.startListening();
 	}
-	instance.startListening();
 	return DHwithVerificationHelper.instance;
     }
 
@@ -67,21 +68,8 @@ public class DHwithVerificationHelper extends DHWithVerification {
 
 	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
 	Client c = id.getApp().getClientById(id);
-	SecureChannel channel = null;
 	if (c != null && !id.getApp().getLocalId().equals(id)) {
-	    // Client is initiating channel --> show verification-code and
-	    // report success
-	    channel = c.getSecureChannel();
-	    if (channel == null) {
-		try {
-		    channel = new SecureChannel(toRemote, c);
-		} catch (IOException e) {
-		    e.printStackTrace();
-		}
-		c.setSecureChannel(channel);
-	    }
-
-	    channel.setOobKey(sharedAuthenticationKey);
+	    c.setOobKey(sharedAuthenticationKey);
 
 	    Intent intent = new Intent("com.google.zxing.client.android.ENCODE");
 	    intent.putExtra("ENCODE_TYPE", "TEXT_TYPE");
@@ -104,10 +92,10 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	    notif.flags = Notification.FLAG_NO_CLEAR
 		    | Notification.FLAG_AUTO_CANCEL;
 
-	    DiscoverService.mNotificationManager.notify(
-		    Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
+	    // DiscoverService.mNotificationManager.notify(
+	    // Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
 
-	    verificationSuccess(toRemote, null, id.toString());
+	    verificationSuccess(toRemote, c, id.toString());
 	    return;
 	}
 
@@ -126,22 +114,18 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	notif.flags = Notification.FLAG_NO_CLEAR
 		| Notification.FLAG_AUTO_CANCEL;
 
-	DiscoverService.mNotificationManager.notify(
-		Constants.NOTIF_VERIFICATION_RESPONSE, notif);
+	// DiscoverService.mNotificationManager.notify(
+	// Constants.NOTIF_VERIFICATION_RESPONSE, notif);
 
-	try {
-	    if (c == null) {
-		c = new Client(id);
-		id.getApp().addClient(c);
-	    }
-	    channel = new SecureChannel(toRemote, c);
-	    c.setRemote(toRemote);
-	    c.setSecureChannel(channel);
-	    channel.startVerification(sharedAuthenticationKey);
-	} catch (final IOException e) {
-	    channel = null;
-	    c = null;
+	if (c == null) {
+	    c = new Client(id);
+	    id.getApp().addClient(c);
 	}
+	// channel = new SecureChannel(toRemote, c);
+	c.setRemote(toRemote);
+	// c.setSecureChannel(channel);
+	// c.startVerification(sharedAuthenticationKey);
+	verificationSuccess(toRemote, c, id.toString());
 
     }
 
@@ -155,18 +139,31 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	    Object optionalVerificationId, String optionalParameterFromRemote,
 	    byte[] sharedSessionKey) {
 	Log.i(this.toString(), "protocolSucceededHook");
-	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
-	Client c = id.getApp().getClientById(id);
-	if (c == null) {
-	    Log.e(this.toString(),
-		    "protocolSucceededHook - no client found!! Should never happen!");
-	    verificationFailure(true, remote, optionalVerificationId,
-		    optionalParameterFromRemote, null,
-		    "remote object not found");
+	// if (optionalVerificationId != null
+	// && optionalVerificationId instanceof Client) {
+	// Client c = (Client) optionalVerificationId;
+	// SecureChannel channel = new SecureChannel(remote);
+	// channel.setSessionKey(sharedSessionKey);
+	// try {
+	// c.setSecureChannel(channel);
+	// } catch (RemoteException e) {
+	// channel = null;
+	// e.printStackTrace();
+	// }
+	// }
+	if (optionalParameterFromRemote == null
+		|| optionalParameterFromRemote.isEmpty()) {
 	    return;
 	}
-	c.getSecureChannel().setSessionKey(sharedSessionKey);
-	c.getSecureChannel().setValid(true);
+	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
+	Client client = id.getApp().getClientById(id);
+	SecureChannel channel = new SecureChannel(remote);
+	channel.setSessionKey(sharedSessionKey);
+	try {
+	    client.setSecureChannel(channel);
+	} catch (RemoteException e) {
+	    e.printStackTrace();
+	}
 
     }
 
@@ -177,7 +174,15 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	Log.i(this.toString(), "protocolFailedHook");
 
 	// where is optionalParameterFromRemote?
-
+	if (optionalVerificationId != null
+		&& optionalVerificationId instanceof Client) {
+	    Client c = (Client) optionalVerificationId;
+	    try {
+		c.setSecureChannel(null);
+	    } catch (RemoteException e1) {
+		e1.printStackTrace();
+	    }
+	}
     }
 
     @Override
@@ -207,5 +212,4 @@ public class DHwithVerificationHelper extends DHWithVerification {
 	super.verificationFailure(failHard, remote, optionalVerificationId,
 		optionalParameterToRemote, e, msg);
     }
-
 }

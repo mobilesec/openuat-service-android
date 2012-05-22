@@ -178,8 +178,12 @@ public final class TCP implements IConnectionType, MessageListener {
 		}
 	    } else if (recControl.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
 		OpenUAT_ID id = OpenUAT_ID.parseToken(recApp);
-		final Client c = new Client(id);
-		id.getApp().addClient(c);
+		RegisteredApp app = id.getApp();
+		Client client = id.getApp().getClientById(id);
+		if (client == null) {
+		    client = new Client(id);
+		    app.addClient(client);
+		}
 		if (!availableClients.containsKey(id)) {
 		    availableClients.put(id, sentFrom);
 		}

@@ -30,6 +30,11 @@ public final class Constants {
     /** The Constant UDP_PORT. */
     public static final int UDP_PORT = 6969;
 
+    public static final int KB_SIZE = (Byte.MAX_VALUE + 1) * 8;
+    
+    // = 4 kb
+    public static final int CHUNK_SIZE = KB_SIZE * 4;
+
     public static final boolean USE_JSSE = true;
     public static final int PROTOCOL_TIMEOUT = -1;
     public static final boolean KEEP_CONNECTED = true;

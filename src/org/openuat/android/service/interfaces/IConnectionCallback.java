@@ -1,8 +1,9 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\hannes.m\\Desktop\\bac\\openuat_service\\src\\org\\openuat\\android\\service\\interfaces\\IConnectionCallback.aidl
+ * Original file: C:\\Users\\Hannes\\SkyDrive\\Documents\\FH\\Sem5\\OpenUAT\\openuat-service-android\\src\\org\\openuat\\android\\service\\interfaces\\IConnectionCallback.aidl
  */
 package org.openuat.android.service.interfaces;
+
 @SuppressWarnings("all")
 public interface IConnectionCallback extends android.os.IInterface {
     /** Local-side IPC implementation stub class. */
@@ -52,7 +53,9 @@ public interface IConnectionCallback extends android.os.IInterface {
 		org.openuat.android.service.interfaces.ISecureChannel _arg0;
 		_arg0 = org.openuat.android.service.interfaces.ISecureChannel.Stub
 			.asInterface(data.readStrongBinder());
-		this.connectionIncoming(_arg0);
+		java.lang.String _arg1;
+		_arg1 = data.readString();
+		this.connectionIncoming(_arg0, _arg1);
 		reply.writeNoException();
 		return true;
 	    }
@@ -77,14 +80,15 @@ public interface IConnectionCallback extends android.os.IInterface {
 	    }
 
 	    public void connectionIncoming(
-		    org.openuat.android.service.interfaces.ISecureChannel connection)
-		    throws android.os.RemoteException {
+		    org.openuat.android.service.interfaces.ISecureChannel connection,
+		    java.lang.String remote) throws android.os.RemoteException {
 		android.os.Parcel _data = android.os.Parcel.obtain();
 		android.os.Parcel _reply = android.os.Parcel.obtain();
 		try {
 		    _data.writeInterfaceToken(DESCRIPTOR);
 		    _data.writeStrongBinder((((connection != null)) ? (connection
 			    .asBinder()) : (null)));
+		    _data.writeString(remote);
 		    mRemote.transact(Stub.TRANSACTION_connectionIncoming,
 			    _data, _reply, 0);
 		    _reply.readException();
@@ -99,6 +103,6 @@ public interface IConnectionCallback extends android.os.IInterface {
     }
 
     public void connectionIncoming(
-	    org.openuat.android.service.interfaces.ISecureChannel connection)
-	    throws android.os.RemoteException;
+	    org.openuat.android.service.interfaces.ISecureChannel connection,
+	    java.lang.String remote) throws android.os.RemoteException;
 }

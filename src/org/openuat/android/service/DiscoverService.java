@@ -15,9 +15,12 @@ import java.util.List;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
+import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.android.service.interfaces.ISecureChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import android.app.NotificationManager;
 import android.app.Service;
@@ -34,14 +37,12 @@ import android.util.Log;
  * @author Hannes Markschlaeger
  */
 public class DiscoverService extends Service {
-
     public static Context context = null;
     public static NotificationManager mNotificationManager;
     public static String oob_key = null;
 
     public DiscoverService() {
 	Log.i("DiscoverService", "ctor");
-
 	try {
 	    DHwithVerificationHelper.getInstance();
 	} catch (IOException e) {
@@ -52,19 +53,18 @@ public class DiscoverService extends Service {
     /** The device authenticator. */
     private final IDeviceAuthenticator.Stub deviceAuthenticator = new IDeviceAuthenticator.Stub() {
 	@Override
-	public ISecureChannel authenticate(final String serviceId,
-		final String device) throws RemoteException {
+	public void authenticate(final String serviceId, final String device)
+		throws RemoteException {
 	    Log.i(this.toString(), "authenticate" + device);
 
 	    OpenUAT_ID id = OpenUAT_ID.parseToken(device);
 
 	    Client c = id.getApp().getClientById(id);
 	    try {
-		return c.establishConnection();
+		c.establishConnection();
 	    } catch (IOException e) {
 		e.printStackTrace();
 	    }
-	    return null;
 	}
 
 	@Override
@@ -99,9 +99,19 @@ public class DiscoverService extends Service {
 	public void register(final String serviceId,
 		IConnectionCallback connectionCallback) throws RemoteException {
 
-	    final RegisteredApp app = new RegisteredApp(serviceId,
-		    IConnectionType.CONNECTION_TYPE.WIFI);
-	    RegisteredAppManager.registerService(app);
+	    if (serviceId == null || serviceId.isEmpty()) {
+		Log.e(this.toString(), "invalid serviceId");
+		throw new RemoteException();
+	    }
+
+	    RegisteredApp app = RegisteredAppManager
+		    .getServiceByName(serviceId);
+	    if (app == null) {
+		app = new RegisteredApp(serviceId,
+			IConnectionType.CONNECTION_TYPE.WIFI);
+		app.setConnectionCallback(connectionCallback);
+		RegisteredAppManager.registerService(app);
+	    }
 
 	    Log.i(this.toString(), app + " registered");
 	}

@@ -13,8 +13,12 @@ import java.util.ArrayList;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
+import org.openuat.android.service.interfaces.IConnectionCallback;
+import org.openuat.android.service.interfaces.ISecureChannel;
 import org.openuat.channel.main.RemoteConnection;
 
+import android.os.RemoteCallbackList;
+import android.os.RemoteException;
 import android.provider.Settings.Secure;
 import android.util.Log;
 
@@ -27,6 +31,8 @@ import android.util.Log;
 public class RegisteredApp {
 
     private OpenUAT_ID localId = null;
+    private Client localClient = null;
+    private RemoteCallbackList<IConnectionCallback> connectionCallbacks = null;
 
     public OpenUAT_ID getLocalId() {
 	return localId;
@@ -37,8 +43,6 @@ public class RegisteredApp {
 
     /** The m clients. */
     private ArrayList<Client> mClients = null;
-
-    public ArrayList<OpenUAT_ID> ids = null;
 
     /** The m connection. */
     private final IConnectionType.CONNECTION_TYPE mConnection;
@@ -59,12 +63,13 @@ public class RegisteredApp {
 	mName = service;
 	mClients = new ArrayList<Client>();
 	mConnection = connection;
-
-	ids = new ArrayList<OpenUAT_ID>();
+	connectionCallbacks = new RemoteCallbackList<IConnectionCallback>();
 
 	localId = new OpenUAT_ID(mConnection, this,
 		Secure.getString(DiscoverService.context.getContentResolver(),
 			Secure.ANDROID_ID));
+	localClient = Client.createLocalClient(localId);
+	addClient(localClient);
     }
 
     /**
@@ -193,6 +198,32 @@ public class RegisteredApp {
 	} else if (!mName.equals(other.mName))
 	    return false;
 	return true;
+    }
+
+    /**
+     * @return
+     */
+    public Client getLocalClient() {
+	return localClient;
+    }
+
+    /**
+     * @param connectionCallback
+     */
+    public void setConnectionCallback(IConnectionCallback connectionCallback) {
+	connectionCallbacks.register(connectionCallback);
+    }
+
+    /**
+     * @param channel
+     */
+    public void publishChannel(Client client) throws RemoteException {
+	int n = connectionCallbacks.beginBroadcast();
+	for (int i = 0; i < n; i++) {
+	    connectionCallbacks.getBroadcastItem(i).connectionIncoming(
+		    client.getSecureChannel(), client.getId().toString());
+	}
+	connectionCallbacks.finishBroadcast();
     }
 
 }

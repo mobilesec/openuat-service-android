@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\hannes.m\\Desktop\\bac\\openuat_service\\src\\org\\openuat\\android\\service\\interfaces\\IDeviceAuthenticator.aidl
+ * Original file: C:\\Users\\Hannes\\SkyDrive\\Documents\\FH\\Sem5\\OpenUAT\\openuat-service-android\\src\\org\\openuat\\android\\service\\interfaces\\IDeviceAuthenticator.aidl
  */
 package org.openuat.android.service.interfaces;
 @SuppressWarnings("all")
@@ -104,11 +104,8 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
 		_arg0 = data.readString();
 		java.lang.String _arg1;
 		_arg1 = data.readString();
-		org.openuat.android.service.interfaces.ISecureChannel _result = this
-			.authenticate(_arg0, _arg1);
+		this.authenticate(_arg0, _arg1);
 		reply.writeNoException();
-		reply.writeStrongBinder((((_result != null)) ? (_result
-			.asBinder()) : (null)));
 		return true;
 	    }
 	    }
@@ -157,7 +154,10 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
 		return _result;
 	    }
 
-	    /*
+	    // TODO: method(s) to localize and display authentication method in
+	    // applications which
+	    // offer the end-user a selection of methods
+	    /**
 	     * Returns the list of devices currently available for a connection
 	     * with this service, e.g. via Bluetooth or on the local (wireless)
 	     * network.
@@ -273,12 +273,10 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
 	     * On success, an instance of ISecureChannel is returned. On
 	     * failure, null is returned.
 	     */
-	    public org.openuat.android.service.interfaces.ISecureChannel authenticate(
-		    java.lang.String serviceId, java.lang.String device)
-		    throws android.os.RemoteException {
+	    public void authenticate(java.lang.String serviceId,
+		    java.lang.String device) throws android.os.RemoteException {
 		android.os.Parcel _data = android.os.Parcel.obtain();
 		android.os.Parcel _reply = android.os.Parcel.obtain();
-		org.openuat.android.service.interfaces.ISecureChannel _result;
 		try {
 		    _data.writeInterfaceToken(DESCRIPTOR);
 		    _data.writeString(serviceId);
@@ -286,13 +284,10 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
 		    mRemote.transact(Stub.TRANSACTION_authenticate, _data,
 			    _reply, 0);
 		    _reply.readException();
-		    _result = org.openuat.android.service.interfaces.ISecureChannel.Stub
-			    .asInterface(_reply.readStrongBinder());
 		} finally {
 		    _reply.recycle();
 		    _data.recycle();
 		}
-		return _result;
 	    }
 	}
 
@@ -313,6 +308,9 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
     public java.lang.String[] getSupportedAuthenticationMethods()
 	    throws android.os.RemoteException;
 
+    // TODO: method(s) to localize and display authentication method in
+    // applications which
+    // offer the end-user a selection of methods
     /**
      * Returns the list of devices currently available for a connection with
      * this service, e.g. via Bluetooth or on the local (wireless) network.
@@ -360,7 +358,6 @@ public interface IDeviceAuthenticator extends android.os.IInterface {
      * On success, an instance of ISecureChannel is returned. On failure, null
      * is returned.
      */
-    public org.openuat.android.service.interfaces.ISecureChannel authenticate(
-	    java.lang.String serviceId, java.lang.String device)
+    public void authenticate(java.lang.String serviceId, java.lang.String device)
 	    throws android.os.RemoteException;
 }
