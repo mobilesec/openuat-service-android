@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.android.service.interfaces.IConnectionCallback;
-import org.openuat.android.service.interfaces.ISecureChannel;
 import org.openuat.channel.main.RemoteConnection;
 
 import android.os.RemoteCallbackList;
@@ -217,13 +216,24 @@ public class RegisteredApp {
     /**
      * @param channel
      */
-    public void publishChannel(Client client) throws RemoteException {
-	int n = connectionCallbacks.beginBroadcast();
-	for (int i = 0; i < n; i++) {
-	    connectionCallbacks.getBroadcastItem(i).connectionIncoming(
-		    client.getSecureChannel(), client.getId().toString());
+    public synchronized void publishChannel(Client client)
+	    throws RemoteException {
+	Log.i(this.toString(), "publishing channel: " + client.toString());
+
+	try {
+	    int n = connectionCallbacks.beginBroadcast();
+	    for (int i = 0; i < n; i++) {
+		Log.i(this.toString(), "TROLOLO");
+		connectionCallbacks.getBroadcastItem(i).connectionIncoming(
+			client.getSecureChannel(), client.getId().toString());
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    Log.e(this.toString(), e.getMessage());
+	} finally {
+	    connectionCallbacks.finishBroadcast();
 	}
-	connectionCallbacks.finishBroadcast();
+
     }
 
 }

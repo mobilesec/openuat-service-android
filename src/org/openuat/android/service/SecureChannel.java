@@ -19,8 +19,10 @@ import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
 import org.openuat.channel.main.RemoteConnection;
 
+import android.os.Parcel;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.sax.StartElementListener;
 import android.util.Log;
 
 /**
@@ -92,7 +94,6 @@ public class SecureChannel extends Stub {
 	this.remoteConnection = toRemote;
 	receiveCallbacks = new RemoteCallbackList<IReceiverCallback>();
 	data = new byte[Constants.CHUNK_SIZE];
-	setReceivePolling(true);
     }
 
     @Override
@@ -151,6 +152,7 @@ public class SecureChannel extends Stub {
     public void registerReceiveHandler(final IReceiverCallback receiver)
 	    throws RemoteException {
 	receiveCallbacks.register(receiver);
+	setReceivePolling(true);
     }
 
     @Override
@@ -194,6 +196,25 @@ public class SecureChannel extends Stub {
 
     public void setSessionKey(byte[] sessionKey) {
 	sessionkey = sessionKey;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.openuat.android.service.interfaces.ISecureChannel.Stub#onTransact
+     * (int, android.os.Parcel, android.os.Parcel, int)
+     */
+    @Override
+    public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
+	try {
+	    return super.onTransact(code, data, reply, flags);
+	} catch (RemoteException e) {
+	    Log.e(this.toString(), e.toString());
+	    e.printStackTrace();
+	    throw e;
+	}
+
     }
 
     private void close() throws IOException {

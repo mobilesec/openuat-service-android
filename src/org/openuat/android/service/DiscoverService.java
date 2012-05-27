@@ -15,12 +15,9 @@ import java.util.List;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
-import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.android.service.interfaces.ISecureChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import android.app.NotificationManager;
 import android.app.Service;
