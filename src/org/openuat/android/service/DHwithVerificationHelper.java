@@ -28,188 +28,193 @@ import android.util.Log;
 
 public class DHwithVerificationHelper extends DHWithVerification {
 
-    private static DHwithVerificationHelper instance = null;
+	private static final boolean ENABLE_QRVERIFICATION = true;
+	private static DHwithVerificationHelper instance = null;
 
-    public static DHwithVerificationHelper getInstance() throws IOException {
-	if (DHwithVerificationHelper.instance == null) {
-	    DHwithVerificationHelper.instance = new DHwithVerificationHelper(
-		    new TCPPortServer(Constants.TCP_PORT,
-			    Constants.PROTOCOL_TIMEOUT,
-			    Constants.KEEP_CONNECTED, Constants.USE_JSSE),
-		    true, true, true, null, Constants.USE_JSSE);
-	    instance.startListening();
-	}
-	return DHwithVerificationHelper.instance;
-    }
-
-    /**
-     * @param server
-     * @param keepConnectedOnSuccess
-     * @param keepConnectedOnFailure
-     * @param concurrentVerificationSupported
-     * @param instanceId
-     * @param useJSSE
-     */
-    private DHwithVerificationHelper(HostAuthenticationServer server,
-	    boolean keepConnectedOnSuccess, boolean keepConnectedOnFailure,
-	    boolean concurrentVerificationSupported, String instanceId,
-	    boolean useJSSE) {
-	super(server, keepConnectedOnSuccess, keepConnectedOnFailure,
-		concurrentVerificationSupported, instanceId, useJSSE);
-	Log.i(this.toString(), "DHwithVerificationHelper");
-    }
-
-    @Override
-    protected void startVerificationAsync(byte[] sharedAuthenticationKey,
-	    String optionalParam, RemoteConnection toRemote) {
-
-	// incoming connection: start scan-procedure - verificationSuccess -
-	// wait for success from remote
-
-	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
-	Client c = id.getApp().getClientById(id);
-	if (c != null && !id.getApp().getLocalId().equals(id)) {
-	    c.setOobKey(sharedAuthenticationKey);
-
-	    Intent intent = new Intent("com.google.zxing.client.android.ENCODE");
-	    intent.putExtra("ENCODE_TYPE", "TEXT_TYPE");
-	    intent.putExtra("ENCODE_DATA",
-		    Hash.getHexString(sharedAuthenticationKey));
-	    intent.putExtra("ENCODE_SHOW_CONTENTS", true);
-
-	    Notification notif = new Notification(R.drawable.ic_dialog_alert,
-		    "Verification required", System.currentTimeMillis());
-
-	    PendingIntent pendingIntent = PendingIntent.getActivity(
-		    DiscoverService.context, 0, intent,
-		    PendingIntent.FLAG_CANCEL_CURRENT
-			    | PendingIntent.FLAG_ONE_SHOT);
-
-	    notif.setLatestEventInfo(DiscoverService.context,
-		    "OpenUAT - Opening connection",
-		    "This code has to be verified by the other side",
-		    pendingIntent);
-	    notif.flags = Notification.FLAG_NO_CLEAR
-		    | Notification.FLAG_AUTO_CANCEL;
-
-	    // DiscoverService.mNotificationManager.notify(
-	    // Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
-
-	    verificationSuccess(toRemote, c, id.toString());
-	    return;
+	public static DHwithVerificationHelper getInstance() throws IOException {
+		if (DHwithVerificationHelper.instance == null) {
+			DHwithVerificationHelper.instance = new DHwithVerificationHelper(
+					new TCPPortServer(Constants.TCP_PORT,
+							Constants.PROTOCOL_TIMEOUT,
+							Constants.KEEP_CONNECTED, Constants.USE_JSSE),
+					true, true, true, null, Constants.USE_JSSE);
+			instance.startListening();
+		}
+		return DHwithVerificationHelper.instance;
 	}
 
-	Intent intent = new Intent(DiscoverService.context,
-		VerificationQR.class);
-
-	PendingIntent pendingIntent = PendingIntent.getActivity(
-		DiscoverService.context, 0, intent, PendingIntent.FLAG_ONE_SHOT
-			| PendingIntent.FLAG_CANCEL_CURRENT);
-
-	Notification notif = new Notification(R.drawable.ic_menu_help,
-		"verfication required", System.currentTimeMillis());
-	notif.setLatestEventInfo(DiscoverService.context,
-		"OpenUAT - Incoming connection",
-		"Please verify the connection", pendingIntent);
-	notif.flags = Notification.FLAG_NO_CLEAR
-		| Notification.FLAG_AUTO_CANCEL;
-
-	// DiscoverService.mNotificationManager.notify(
-	// Constants.NOTIF_VERIFICATION_RESPONSE, notif);
-
-	if (c == null) {
-	    c = new Client(id);
-	    id.getApp().addClient(c);
-	}
-	// channel = new SecureChannel(toRemote, c);
-	c.setRemote(toRemote);
-	// c.setSecureChannel(channel);
-	// c.startVerification(sharedAuthenticationKey);
-	verificationSuccess(toRemote, c, id.toString());
-
-    }
-
-    @Override
-    protected void resetHook(RemoteConnection remote) {
-	Log.i(this.toString(), "resetHook");
-    }
-
-    @Override
-    protected void protocolSucceededHook(RemoteConnection remote,
-	    Object optionalVerificationId, String optionalParameterFromRemote,
-	    byte[] sharedSessionKey) {
-	Log.i(this.toString(), "protocolSucceededHook");
-	// if (optionalVerificationId != null
-	// && optionalVerificationId instanceof Client) {
-	// Client c = (Client) optionalVerificationId;
-	// SecureChannel channel = new SecureChannel(remote);
-	// channel.setSessionKey(sharedSessionKey);
-	// try {
-	// c.setSecureChannel(channel);
-	// } catch (RemoteException e) {
-	// channel = null;
-	// e.printStackTrace();
-	// }
-	// }
-	if (optionalParameterFromRemote == null
-		|| optionalParameterFromRemote.isEmpty()) {
-	    return;
-	}
-	OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
-	Client client = id.getApp().getClientById(id);
-	SecureChannel channel = new SecureChannel(remote);
-	channel.setSessionKey(sharedSessionKey);
-	try {
-	    client.setSecureChannel(channel);
-	} catch (RemoteException e) {
-	    e.printStackTrace();
+	/**
+	 * @param server
+	 * @param keepConnectedOnSuccess
+	 * @param keepConnectedOnFailure
+	 * @param concurrentVerificationSupported
+	 * @param instanceId
+	 * @param useJSSE
+	 */
+	private DHwithVerificationHelper(HostAuthenticationServer server,
+			boolean keepConnectedOnSuccess, boolean keepConnectedOnFailure,
+			boolean concurrentVerificationSupported, String instanceId,
+			boolean useJSSE) {
+		super(server, keepConnectedOnSuccess, keepConnectedOnFailure,
+				concurrentVerificationSupported, instanceId, useJSSE);
+		Log.i(this.toString(), "DHwithVerificationHelper");
 	}
 
-    }
+	@Override
+	protected void startVerificationAsync(byte[] sharedAuthenticationKey,
+			String optionalParam, RemoteConnection toRemote) {
 
-    @Override
-    protected void protocolFailedHook(boolean failedHard,
-	    RemoteConnection remote, Object optionalVerificationId,
-	    Exception e, String message) {
-	Log.i(this.toString(), "protocolFailedHook");
+		// incoming connection: start scan-procedure - verificationSuccess -
+		// wait for success from remote
 
-	// where is optionalParameterFromRemote?
-	if (optionalVerificationId != null
-		&& optionalVerificationId instanceof Client) {
-	    Client c = (Client) optionalVerificationId;
-	    try {
-		c.setSecureChannel(null);
-	    } catch (RemoteException e1) {
-		e1.printStackTrace();
-	    }
+		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
+		Client c = id.getApp().getClientById(id);
+		if (c != null && !id.getApp().getLocalId().equals(id)) {
+			c.setOobKey(sharedAuthenticationKey);
+
+			Intent intent = new Intent("com.google.zxing.client.android.ENCODE");
+			intent.putExtra("ENCODE_TYPE", "TEXT_TYPE");
+			intent.putExtra("ENCODE_DATA",
+					Hash.getHexString(sharedAuthenticationKey));
+			intent.putExtra("ENCODE_SHOW_CONTENTS", true);
+
+			Notification notif = new Notification(R.drawable.ic_dialog_alert,
+					"Verification required", System.currentTimeMillis());
+
+			PendingIntent pendingIntent = PendingIntent.getActivity(
+					DiscoverService.context, 0, intent,
+					PendingIntent.FLAG_CANCEL_CURRENT
+							| PendingIntent.FLAG_ONE_SHOT);
+
+			notif.setLatestEventInfo(DiscoverService.context,
+					"OpenUAT - Opening connection",
+					"This code has to be verified by the other side",
+					pendingIntent);
+			notif.flags = Notification.FLAG_NO_CLEAR
+					| Notification.FLAG_AUTO_CANCEL;
+
+			if (ENABLE_QRVERIFICATION) {
+				DiscoverService.mNotificationManager.notify(
+						Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
+			}
+
+			verificationSuccess(toRemote, c, id.toString());
+			return;
+		}
+
+		Intent intent = new Intent(DiscoverService.context,
+				VerificationQR.class);
+
+		PendingIntent pendingIntent = PendingIntent.getActivity(
+				DiscoverService.context, 0, intent, PendingIntent.FLAG_ONE_SHOT
+						| PendingIntent.FLAG_CANCEL_CURRENT);
+
+		Notification notif = new Notification(R.drawable.ic_menu_help,
+				"verfication required", System.currentTimeMillis());
+		notif.setLatestEventInfo(DiscoverService.context,
+				"OpenUAT - Incoming connection",
+				"Please verify the connection", pendingIntent);
+		notif.flags = Notification.FLAG_NO_CLEAR
+				| Notification.FLAG_AUTO_CANCEL;
+
+		DiscoverService.mNotificationManager.notify(
+				Constants.NOTIF_VERIFICATION_RESPONSE, notif);
+
+		if (c == null) {
+			c = new Client(id);
+			id.getApp().addClient(c);
+		}
+		c.setRemote(toRemote);
+		
+		if (ENABLE_QRVERIFICATION) {
+			c.startVerification(sharedAuthenticationKey);
+		} else {
+			verificationSuccess(toRemote, c, id.toString());
+		}
+
 	}
-    }
 
-    @Override
-    protected void protocolProgressHook(RemoteConnection remote, int cur,
-	    int max, String message) {
-	Log.i(this.toString(), "protocolProgressHook");
-    }
+	@Override
+	protected void resetHook(RemoteConnection remote) {
+		Log.i(this.toString(), "resetHook");
+	}
 
-    @Override
-    protected void protocolStartedHook(RemoteConnection remote) {
-	Log.i(this.toString(), "protocolStartedHook");
-    }
+	@Override
+	protected void protocolSucceededHook(RemoteConnection remote,
+			Object optionalVerificationId, String optionalParameterFromRemote,
+			byte[] sharedSessionKey) {
+		Log.i(this.toString(), "protocolSucceededHook");
+		// if (optionalVerificationId != null
+		// && optionalVerificationId instanceof Client) {
+		// Client c = (Client) optionalVerificationId;
+		// SecureChannel channel = new SecureChannel(remote);
+		// channel.setSessionKey(sharedSessionKey);
+		// try {
+		// c.setSecureChannel(channel);
+		// } catch (RemoteException e) {
+		// channel = null;
+		// e.printStackTrace();
+		// }
+		// }
+		if (optionalParameterFromRemote == null
+				|| optionalParameterFromRemote.isEmpty()) {
+			return;
+		}
+		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
+		Client client = id.getApp().getClientById(id);
+		SecureChannel channel = new SecureChannel(remote);
+		channel.setSessionKey(sharedSessionKey);
+		try {
+			client.setSecureChannel(channel);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 
-    @Override
-    public void verificationSuccess(RemoteConnection remote,
-	    Object optionalVerificationId, String optionalParameterToRemote) {
-	Log.i(this.toString(), "verificationSuccess");
-	super.verificationSuccess(remote, optionalVerificationId,
-		optionalParameterToRemote);
-    }
+	}
 
-    @Override
-    public void verificationFailure(boolean failHard, RemoteConnection remote,
-	    Object optionalVerificationId, String optionalParameterToRemote,
-	    Exception e, String msg) {
-	Log.i(this.toString(), "verificationFailure");
-	super.verificationFailure(failHard, remote, optionalVerificationId,
-		optionalParameterToRemote, e, msg);
-    }
+	@Override
+	protected void protocolFailedHook(boolean failedHard,
+			RemoteConnection remote, Object optionalVerificationId,
+			Exception e, String message) {
+		Log.i(this.toString(), "protocolFailedHook");
+
+		// where is optionalParameterFromRemote?
+		if (optionalVerificationId != null
+				&& optionalVerificationId instanceof Client) {
+			Client c = (Client) optionalVerificationId;
+			try {
+				c.setSecureChannel(null);
+			} catch (RemoteException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	protected void protocolProgressHook(RemoteConnection remote, int cur,
+			int max, String message) {
+		Log.i(this.toString(), "protocolProgressHook");
+	}
+
+	@Override
+	protected void protocolStartedHook(RemoteConnection remote) {
+		Log.i(this.toString(), "protocolStartedHook");
+	}
+
+	@Override
+	public void verificationSuccess(RemoteConnection remote,
+			Object optionalVerificationId, String optionalParameterToRemote) {
+		Log.i(this.toString(), "verificationSuccess");
+		super.verificationSuccess(remote, optionalVerificationId,
+				optionalParameterToRemote);
+	}
+
+	@Override
+	public void verificationFailure(boolean failHard, RemoteConnection remote,
+			Object optionalVerificationId, String optionalParameterToRemote,
+			Exception e, String msg) {
+		Log.i(this.toString(), "verificationFailure");
+		super.verificationFailure(failHard, remote, optionalVerificationId,
+				optionalParameterToRemote, e, msg);
+	}
 }

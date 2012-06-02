@@ -14,6 +14,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import org.openuat.android.Constants;
+
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
 import android.util.Log;
@@ -29,25 +31,25 @@ public class Util {
     /**
      * Concat.
      * 
-     * @param prefix
+     * @param first
      *            the prefix
-     * @param data
+     * @param second
      *            the data
      * @return the byte[]
      */
-    public static byte[] concat(final byte[] prefix, final byte[] data) {
-	if (prefix == null) {
-	    if (data == null) {
+    public static byte[] concat(final byte[] first, final byte[] second) {
+	if (first == null) {
+	    if (second == null) {
 		return null;
 	    }
-	    return data;
+	    return second;
 	}
-	if (data == null) {
-	    return prefix;
+	if (second == null) {
+	    return first;
 	}
 	final byte[] result = Arrays
-		.copyOf(prefix, prefix.length + data.length);
-	System.arraycopy(data, 0, result, prefix.length, data.length);
+		.copyOf(first, first.length + second.length);
+	System.arraycopy(second, 0, result, first.length, second.length);
 	return result;
     }
 
@@ -71,5 +73,14 @@ public class Util {
 	    e.printStackTrace();
 	}
 	return localhost;
+    }
+
+    /**
+     * @param data
+     */
+    public static byte[] makeParcel(byte[] data) {
+	return concat(String.format(Constants.HEADER_PATTERN, data.length)
+		.getBytes(), data);
+
     }
 }

@@ -9,34 +9,40 @@
 package org.openuat.android;
 
 public final class Constants {
-    public static final int NOTIF_VERIFICATION_CHALLENGE = 100;
-    public static final int NOTIF_VERIFICATION_RESPONSE = 101;
+	public static final int NOTIF_VERIFICATION_CHALLENGE = 100;
+	public static final int NOTIF_VERIFICATION_RESPONSE = 101;
 
-    /** The Constant DISCOVER_CHALLENGE. */
-    public static final String DISCOVER_CHALLENGE = "DISCOVER_CHALLENGE";
+	/** The Constant DISCOVER_CHALLENGE. */
+	public static final String DISCOVER_CHALLENGE = "DISCOVER_CHALLENGE";
 
-    /** The Constant DISCOVER_RESPOND. */
-    public static final String DISCOVER_RESPOND = "DISCOVER_RESPOND";
+	/** The Constant DISCOVER_RESPOND. */
+	public static final String DISCOVER_RESPOND = "DISCOVER_RESPOND";
 
-    /** The Constant END_TAG. */
-    public static final String END_TAG = "<END>";
+	/** The Constant END_TAG. */
+	public static final String END_TAG = "<END>";
 
-    /** The Constant SEPERATOR. */
-    public static final String SEPERATOR = "*";
+	/** The Constant SEPERATOR. */
+	public static final String SEPERATOR = "*";
 
-    /** The Constant TCP_PORT. */
-    public static final int TCP_PORT = 6968;
+	/** The Constant TCP_PORT. */
+	public static final int TCP_PORT = 6968;
 
-    /** The Constant UDP_PORT. */
-    public static final int UDP_PORT = 6969;
+	/** The Constant UDP_PORT. */
+	public static final int UDP_PORT = 6969;
 
-    public static final int KB_SIZE = (Byte.MAX_VALUE + 1) * 8;
-    
-    // = 4 kb
-    public static final int CHUNK_SIZE = KB_SIZE * 4;
+	public static final int KB_SIZE = (Byte.MAX_VALUE + 1) * 8;
 
-    public static final boolean USE_JSSE = true;
-    public static final int PROTOCOL_TIMEOUT = -1;
-    public static final boolean KEEP_CONNECTED = true;
-    public static final int POLLING_INTERVALL = 250;
+	// = 4 kb
+	public static final int CHUNK_SIZE = KB_SIZE * 64;
+
+	public static final int HEADER_LENGTH = String.valueOf(CHUNK_SIZE)
+			.getBytes().length;
+	public static final String HEADER_PATTERN = "%0" + HEADER_LENGTH + "d";
+
+	public static final int DATA_LENGTH = CHUNK_SIZE - HEADER_LENGTH;
+
+	public static final boolean USE_JSSE = true;
+	public static final int PROTOCOL_TIMEOUT = -1;
+	public static final boolean KEEP_CONNECTED = true;
+	public static final int POLLING_INTERVALL = 250;
 }

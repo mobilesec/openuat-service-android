@@ -14,15 +14,14 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openuat.android.Constants;
 import org.openuat.android.service.interfaces.IReceiverCallback;
 import org.openuat.android.service.interfaces.ISecureChannel.Stub;
 import org.openuat.channel.main.RemoteConnection;
 
-import android.os.Parcel;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.sax.StartElementListener;
 import android.util.Log;
 
 /**
@@ -33,200 +32,228 @@ import android.util.Log;
  */
 public class SecureChannel extends Stub {
 
-    private RemoteCallbackList<IReceiverCallback> receiveCallbacks = null;
+	private RemoteCallbackList<IReceiverCallback> receiveCallbacks = null;
+	boolean callbackInUse = false;
 
-    private BufferedInputStream inStream = null;
-    private BufferedOutputStream outStream = null;
+	private BufferedInputStream inStream = null;
+	private BufferedOutputStream outStream = null;
 
-    // storage for receive
-    private byte[] data = null;
-
-    private byte[] sessionkey = null;
-
-    private RemoteConnection remoteConnection = null;
-
-    private volatile Thread receiveTrigger = null;
-    private final Thread receiveThread = new Thread(new Runnable() {
+	// storage for receive
 	private byte[] data = null;
-	private int n = 0;
-	Thread thisThread = null;
+	private byte[] sessionkey = null;
+
+	private RemoteConnection remoteConnection = null;
+
+	private volatile Thread receiveTrigger = null;
+	private final Thread receiveThread = new Thread(new Runnable() {
+		private byte[] data = null;
+		private int n = 0;
+		Thread thisThread = null;
+
+		@Override
+		public void run() {
+			thisThread = Thread.currentThread();
+			while (receiveTrigger == thisThread) {
+				try {
+					data = receive();
+					synchronized (receiveCallbacks) {
+						while (callbackInUse) {
+							try {
+								receiveCallbacks.wait();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+						callbackInUse = true;
+						n = receiveCallbacks.beginBroadcast();
+						if (n == 0) {
+							setReceivePolling(false);
+						}
+						for (int i = 0; i < n; i++) {
+							Log.d(this.toString(), "broadcasting.. "
+									+ data.length + " bytes");
+							receiveCallbacks.getBroadcastItem(i).receive(data);
+						}
+						receiveCallbacks.finishBroadcast();
+						callbackInUse = false;
+						receiveCallbacks.notify();
+					}
+				} catch (final RemoteException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	});
+
+	/**
+	 * Instantiates a new secure channel.
+	 * 
+	 * @param toRemote
+	 *            the remote tcp connection
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 */
+	public SecureChannel(final RemoteConnection toRemote) {
+		this.remoteConnection = toRemote;
+		receiveCallbacks = new RemoteCallbackList<IReceiverCallback>();
+		data = new byte[Constants.CHUNK_SIZE];
+	}
 
 	@Override
-	public void run() {
-	    thisThread = Thread.currentThread();
-	    while (receiveTrigger == thisThread) {
+	protected void finalize() {
 		try {
-		    n = receiveCallbacks.beginBroadcast();
-		    for (int i = 0; i < n; i++) {
-			data = receive();
-			receiveCallbacks.getBroadcastItem(i).receive(data);
-		    }
-		    receiveCallbacks.finishBroadcast();
-		} catch (final RemoteException e) {
-		    e.printStackTrace();
+			close();
+			super.finalize();
+		} catch (Throwable e) {
+			e.printStackTrace();
 		}
-	    }
 	}
-    });
 
-    private volatile Thread keepAliveTrigger = null;
-    private final Thread keepAliveThread = new Thread(new Runnable() {
-	Thread thisThread = null;
+	byte incHeader[] = new byte[Constants.HEADER_LENGTH];
 
 	@Override
-	public void run() {
-	    thisThread = Thread.currentThread();
-	    while (keepAliveTrigger == thisThread) {
-		// TODO keepalive / check
-	    }
-	}
-    });
+	public byte[] receive() throws RemoteException {
 
-    /**
-     * Instantiates a new secure channel.
-     * 
-     * @param toRemote
-     *            the remote tcp connection
-     * @throws IOException
-     *             Signals that an I/O exception has occurred.
-     */
-    public SecureChannel(final RemoteConnection toRemote) {
-	this.remoteConnection = toRemote;
-	receiveCallbacks = new RemoteCallbackList<IReceiverCallback>();
-	data = new byte[Constants.CHUNK_SIZE];
-    }
+		int bytesReceived = 0;
+		try {
+			if (inStream == null) {
+				inStream = new BufferedInputStream(
+						remoteConnection.getInputStream());
+			}
 
-    @Override
-    protected void finalize() {
-	try {
-	    close();
-	    super.finalize();
-	} catch (Throwable e) {
-	    e.printStackTrace();
-	}
-    }
+			while ((bytesReceived += inStream.read(incHeader, bytesReceived,
+					Constants.HEADER_LENGTH - bytesReceived)) < Constants.HEADER_LENGTH) {
+			}
 
-    @Override
-    public byte[] receive() throws RemoteException {
-	// int len = 0;
-	// byte[] data = null;
-	// byte[] prefix = new byte[10];
-	//
-	// try {
-	// if (inStream == null) {
-	// inStream = new BufferedInputStream(
-	// remoteConnection.getInputStream());
-	// }
-	// inStream.read(prefix);
-	// try {
-	// len = Integer.parseInt((new String(prefix)).trim());
-	// } catch (NumberFormatException e) {
-	// return null;
-	// }
-	// if (len > 0) {
-	// Log.i(this.toString(), "receiving bytes: " + len);
-	// data = new byte[len];
-	// inStream.read(data, 0, data.length);
-	// }
-	// prefix = new byte[10];
-	// return data;
-	// } catch (final NumberFormatException e) {
-	// e.printStackTrace();
-	// } catch (final IOException e) {
-	// e.printStackTrace();
-	// }
-	// return data;
-	try {
-	    int bytesRead = remoteConnection.getInputStream().read(data);
-	    if (bytesRead != -1) {
-		return Arrays.copyOf(data, bytesRead);
-	    }
-	} catch (IOException e) {
-	    e.printStackTrace();
-	}
-	return null;
+			int paket_size = Integer.parseInt(new String(incHeader, 0,
+					Constants.HEADER_LENGTH));
+			Log.i(this.toString(), "paket size " + paket_size);
 
-    }
-
-    @Override
-    public void registerReceiveHandler(final IReceiverCallback receiver)
-	    throws RemoteException {
-	receiveCallbacks.register(receiver);
-	setReceivePolling(true);
-    }
-
-    @Override
-    public boolean send(final byte[] data) throws RemoteException {
-	if (remoteConnection != null) {
-	    try {
-		if (outStream == null) {
-		    outStream = new BufferedOutputStream(
-			    remoteConnection.getOutputStream(),
-			    Constants.CHUNK_SIZE);
+			bytesReceived = 0;
+			byte[] incData = new byte[paket_size];
+			while ((bytesReceived += inStream.read(incData, bytesReceived,
+					paket_size - bytesReceived)) < paket_size) {
+			}
+			Log.i(this.toString(),
+					"ciphertext: "
+							+ new String(incData, 0, Math.min(incData.length,
+									35)));
+			byte[] plaintext = AESGCM.SimpleDecrypt(incData, sessionkey);
+			Log.i(this.toString(), "plaintext: "
+					+ new String(plaintext, 0, Math.min(plaintext.length, 35)));
+			return plaintext;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+		} catch (InvalidCipherTextException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
 		}
-		Log.d(this.toString(), "sending..");
-		// final byte[] prefix = java.util.Arrays.copyOfRange(String
-		// .valueOf(data.length).getBytes(), 0, 10);
-		// outStream.write(Util.concat(prefix, data));
-		outStream.write(data);
-		outStream.flush();
-	    } catch (final IOException e) {
-		e.printStackTrace();
-		return false;
-	    }
-	}
-	return true;
-    }
+		return null;
 
-    private void setReceivePolling(Boolean status) {
-	if (status) {
-	    receiveTrigger = receiveThread;
-	    receiveThread.start();
-	} else {
-	    receiveTrigger = null;
 	}
 
-    }
-
-    @Override
-    public void unregisterReceiveHandler(final IReceiverCallback receiver)
-	    throws RemoteException {
-	receiveCallbacks.unregister(receiver);
-    }
-
-    public void setSessionKey(byte[] sessionKey) {
-	sessionkey = sessionKey;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.openuat.android.service.interfaces.ISecureChannel.Stub#onTransact
-     * (int, android.os.Parcel, android.os.Parcel, int)
-     */
-    @Override
-    public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
-	try {
-	    return super.onTransact(code, data, reply, flags);
-	} catch (RemoteException e) {
-	    Log.e(this.toString(), e.toString());
-	    e.printStackTrace();
-	    throw e;
+	@Override
+	public void registerReceiveHandler(final IReceiverCallback receiver)
+			throws RemoteException {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				synchronized (receiveCallbacks) {
+					while (callbackInUse) {
+						try {
+							receiveCallbacks.wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					callbackInUse = true;
+					receiveCallbacks.register(receiver);
+					callbackInUse = false;
+					receiveCallbacks.notify();
+					setReceivePolling(true);
+				}
+			}
+		});
+		t.run();
 	}
 
-    }
+	@Override
+	public boolean send(final byte[] data) throws RemoteException {
+		if (remoteConnection != null) {
+			try {
+				if (outStream == null) {
+					outStream = new BufferedOutputStream(
+							remoteConnection.getOutputStream(),
+							Constants.CHUNK_SIZE);
+				}
+				Log.d(this.toString(), "sending..");
+				byte[] ciphertext = AESGCM.SimpleEncrypt(data, sessionkey);
+				outStream.write(Util.makeParcel(ciphertext));
+				outStream.flush();
+			} catch (final IOException e) {
+				e.printStackTrace();
+				return false;
+			} catch (IllegalStateException e) {
+				e.printStackTrace();
+			} catch (InvalidCipherTextException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			}
+		}
+		return true;
+	}
 
-    private void close() throws IOException {
-	if (inStream != null) {
-	    inStream.close();
+	private void setReceivePolling(Boolean status) {
+		if (status) {
+			receiveTrigger = receiveThread;
+			receiveThread.start();
+		} else {
+			receiveTrigger = null;
+		}
+
 	}
-	if (outStream != null) {
-	    outStream.close();
+
+	@Override
+	public void unregisterReceiveHandler(final IReceiverCallback receiver)
+			throws RemoteException {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				synchronized (receiveCallbacks) {
+					while (callbackInUse) {
+						try {
+							receiveCallbacks.wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					callbackInUse = true;
+					receiveCallbacks.unregister(receiver);
+					callbackInUse = false;
+					receiveCallbacks.notify();
+				}
+			}
+		});
+		t.run();
 	}
-	remoteConnection = null;
-	receiveTrigger = null;
-	keepAliveTrigger = null;
-    }
+
+	public void setSessionKey(byte[] sessionKey) {
+		sessionkey = sessionKey;
+	}
+
+	private void close() throws IOException {
+		if (inStream != null) {
+			inStream.close();
+		}
+		if (outStream != null) {
+			outStream.close();
+		}
+		remoteConnection = null;
+		receiveTrigger = null;
+	}
 
 }
