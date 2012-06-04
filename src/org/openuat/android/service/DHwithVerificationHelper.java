@@ -146,6 +146,7 @@ public class DHwithVerificationHelper extends DHWithVerification {
 		// Create an intent to start the scan-activity.
 		Intent intent = new Intent(DiscoverService.context,
 				VerificationQR.class);
+		intent.putExtra(VerificationQR.CLIENT_EXTRA, c.getId().toString());
 
 		// Create a PendingIntent out of the intent created before.
 		PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -168,7 +169,7 @@ public class DHwithVerificationHelper extends DHWithVerification {
 				Constants.NOTIF_VERIFICATION_RESPONSE, notif);
 
 		// Start the verification thread and set the oob-key
-		c.startVerification();
+		// c.startVerification();
 
 	}
 
