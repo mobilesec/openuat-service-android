@@ -97,6 +97,8 @@ public class Client {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 *             {@link IConnectionCallback#connectionIncoming(org.openuat.android.service.interfaces.ISecureChannel, String)}
+	 * @see DHwithVerificationHelper#startAuthentication(RemoteConnection, int,
+	 *      String)
 	 */
 	public void establishConnection() throws IOException {
 
@@ -134,6 +136,7 @@ public class Client {
 	 *            the new secure channel
 	 * @throws RemoteException
 	 *             the remote exception
+	 * @see RegisteredApp#publishChannel(Client)
 	 */
 	public void setSecureChannel(final SecureChannel channel)
 			throws RemoteException {
@@ -212,85 +215,6 @@ public class Client {
 		return id.toString();
 	}
 
-	/** The verification trigger. */
-	private volatile Thread verificationTrigger = null;
-
-	/**
-	 * Using this thread is necessary due to restrictions and the design concept
-	 * of android. The verification is done in a different activity.
-	 * 
-	 * 
-	 */
-	private final Thread verificationThread = new Thread(new Runnable() {
-		static final int POLLING_BREAK = 250;
-		Thread thisThread = null;
-
-		@Override
-		public void run() {
-			thisThread = Thread.currentThread();
-			while (verificationTrigger == thisThread) {
-				if (DiscoverService.oob_key != null) {
-					boolean result = DiscoverService.oob_key
-							.equalsIgnoreCase(Hash.getHexString(oobKey));
-
-					if (result) {
-						verificationTrigger = null;
-						try {
-							DHwithVerificationHelper.getInstance()
-									.verificationSuccess(remote, this,
-											getId().toString());
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					} else {
-						try {
-							DHwithVerificationHelper
-									.getInstance()
-									.verificationFailure(true, remote, this,
-											getId().toString(),
-											new Exception(), "invalid OOB code");
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-					DiscoverService.oob_key = null;
-					verificationTrigger = null;
-				}
-				try {
-					Thread.sleep(POLLING_BREAK);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
-	});
-
-	/**
-	 * Start verification.
-	 * 
-	 * @param sharedAuthenticationKey
-	 *            the shared authentication key
-	 */
-	public void startVerification() {
-		setVerificationPolling(true);
-	}
-
-	/**
-	 * Sets the verification polling.
-	 * 
-	 * @param status
-	 *            the new verification polling
-	 */
-	private void setVerificationPolling(Boolean status) {
-		if (status) {
-			verificationTrigger = verificationThread;
-			verificationThread.start();
-		} else {
-			verificationTrigger = null;
-		}
-	}
-
 	/**
 	 * Sets the oob key.
 	 * 
@@ -307,11 +231,46 @@ public class Client {
 	 * @param localId
 	 *            The {@link OpenUAT_ID} of the local client.
 	 * @return An instance of {@link Client} which is marked as local client.
+	 * @see #isLocalClient()
 	 */
 	public static Client createLocalClient(OpenUAT_ID localId) {
 		Client client = new Client(localId);
 		client.isLocalClient = true;
 		return client;
+	}
+
+	/**
+	 * This method compares the stored oob-key with the one passed as parameter
+	 * (in general the key received via the OOB-channel). According to the
+	 * result the current verification process will succeed or fail.
+	 * 
+	 * @param key
+	 *            The key to be compared with the stored one.
+	 * @see {@link #checkKeys(String)}
+	 * @see DHwithVerificationHelper#verificationSuccess(RemoteConnection,
+	 *      Object, String)
+	 * @see DHwithVerificationHelper#verificationFailure(boolean,
+	 *      RemoteConnection, Object, String, Exception, String)
+	 */
+	public void checkKeys(String key) {
+		boolean result = key.equalsIgnoreCase(Hash.getHexString(oobKey));
+
+		if (result) {
+			try {
+				DHwithVerificationHelper.getInstance().verificationSuccess(
+						remote, this, getId().toString());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				DHwithVerificationHelper.getInstance().verificationFailure(
+						true, remote, this, getId().toString(),
+						new Exception(), "invalid OOB code");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 }
