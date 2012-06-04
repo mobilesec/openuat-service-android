@@ -17,7 +17,6 @@ import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
-import org.openuat.android.service.interfaces.ISecureChannel;
 
 import android.app.NotificationManager;
 import android.app.Service;
@@ -34,104 +33,97 @@ import android.util.Log;
  * @author Hannes Markschlaeger
  */
 public class DiscoverService extends Service {
-    public static Context context = null;
-    public static NotificationManager mNotificationManager;
-    public static String oob_key = null;
+	public static Context context = null;
+	public static NotificationManager mNotificationManager;
+	public static String oob_key = null;
 
-    public DiscoverService() {
-	Log.i("DiscoverService", "ctor");
-	try {
-	    DHwithVerificationHelper.getInstance();
-	} catch (IOException e) {
-	    e.printStackTrace();
-	}
-    }
-
-    /** The device authenticator. */
-    private final IDeviceAuthenticator.Stub deviceAuthenticator = new IDeviceAuthenticator.Stub() {
-	@Override
-	public void authenticate(final String serviceId, final String device)
-		throws RemoteException {
-	    Log.i(this.toString(), "authenticate" + device);
-
-	    OpenUAT_ID id = OpenUAT_ID.parseToken(device);
-
-	    Client c = id.getApp().getClientById(id);
-	    try {
-		c.establishConnection();
-	    } catch (IOException e) {
-		e.printStackTrace();
-	    }
-	}
-
-	@Override
-	public String[] getAvailableDevices(final String serviceId)
-		throws RemoteException {
-	    Log.i(this.toString(), " getDevices");
-	    final List<Client> list = RegisteredAppManager.getServiceByName(
-		    serviceId).getClients();
-	    final List<String> result = new ArrayList<String>(list.size());
-
-	    for (final Client c : list) {
-		if (!c.isLocalClient()) {
-		    result.add(c.toString());
+	public DiscoverService() {
+		Log.i("DiscoverService", "ctor");
+		try {
+			DHwithVerificationHelper.getInstance();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		Log.i(this.toString(), c.toString());
-	    }
-	    return result.toArray(new String[result.size()]);
 	}
 
+	/** The device authenticator. */
+	private final IDeviceAuthenticator.Stub deviceAuthenticator = new IDeviceAuthenticator.Stub() {
+		@Override
+		public void authenticate(final String serviceId, final String device)
+				throws RemoteException {
+			Log.i(this.toString(), "authenticate" + device);
+
+			OpenUAT_ID id = OpenUAT_ID.parseToken(device);
+
+			Client c = id.getApp().getClientById(id);
+			try {
+				c.establishConnection();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public String[] getAvailableDevices(final String serviceId)
+				throws RemoteException {
+			Log.i(this.toString(), " getDevices");
+			final List<Client> list = RegisteredAppManager.getServiceByName(
+					serviceId).getClients();
+			final List<String> result = new ArrayList<String>(list.size());
+
+			for (final Client c : list) {
+				if (!c.isLocalClient()) {
+					result.add(c.toString());
+				}
+				Log.i(this.toString(), c.toString());
+			}
+			return result.toArray(new String[result.size()]);
+		}
+
+		@Override
+		public String[] getPairedDevices() throws RemoteException {
+			return null;
+		}
+
+		@Override
+		public String[] getSupportedAuthenticationMethods()
+				throws RemoteException {
+			return null;
+		}
+
+		@Override
+		public void register(final String serviceId,
+				IConnectionCallback connectionCallback) throws RemoteException {
+
+			if (serviceId == null || serviceId.isEmpty()) {
+				Log.e(this.toString(), "invalid serviceId");
+				throw new RemoteException();
+			}
+
+			RegisteredApp app = RegisteredAppManager
+					.getServiceByName(serviceId);
+			if (app == null) {
+				app = new RegisteredApp(serviceId,
+						IConnectionType.CONNECTION_TYPE.WIFI);
+				app.setConnectionCallback(connectionCallback);
+				RegisteredAppManager.registerService(app);
+			}
+
+			Log.i(this.toString(), app + " registered");
+		}
+
+	};
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see android.app.Service#onBind(android.content.Intent)
+	 */
 	@Override
-	public String[] getPairedDevices() throws RemoteException {
-	    return null;
+	public final IBinder onBind(final Intent arg0) {
+		Log.i(this.toString(), "binded");
+		context = getApplicationContext();
+		mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		return deviceAuthenticator;
 	}
-
-	@Override
-	public String[] getSupportedAuthenticationMethods()
-		throws RemoteException {
-	    return null;
-	}
-
-	@Override
-	public void register(final String serviceId,
-		IConnectionCallback connectionCallback) throws RemoteException {
-
-	    if (serviceId == null || serviceId.isEmpty()) {
-		Log.e(this.toString(), "invalid serviceId");
-		throw new RemoteException();
-	    }
-
-	    RegisteredApp app = RegisteredAppManager
-		    .getServiceByName(serviceId);
-	    if (app == null) {
-		app = new RegisteredApp(serviceId,
-			IConnectionType.CONNECTION_TYPE.WIFI);
-		app.setConnectionCallback(connectionCallback);
-		RegisteredAppManager.registerService(app);
-	    }
-
-	    Log.i(this.toString(), app + " registered");
-	}
-
-	@Override
-	public ISecureChannel selectAndAuthenticate(final String serviceId)
-		throws RemoteException {
-	    // TODO: show available devices
-	    return null;
-	}
-
-    };
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see android.app.Service#onBind(android.content.Intent)
-     */
-    @Override
-    public final IBinder onBind(final Intent arg0) {
-	Log.i(this.toString(), "binded");
-	context = getApplicationContext();
-	mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-	return deviceAuthenticator;
-    }
 }

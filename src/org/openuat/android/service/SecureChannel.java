@@ -12,7 +12,6 @@ package org.openuat.android.service;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openuat.android.Constants;
@@ -25,21 +24,26 @@ import android.os.RemoteException;
 import android.util.Log;
 
 /**
- * The Class SecureChannel.
+ * The {@link SecureChannel} class represents a connection to a remote
+ * {@link SecureChannel} - usually owned by a {@link Client}.
  * 
+ * @author Hannes Markschläger
  * 
- * @author Hannes Markschlaeger
  */
 public class SecureChannel extends Stub {
 
+	/**
+	 * The receiver-callbacks.
+	 */
 	private RemoteCallbackList<IReceiverCallback> receiveCallbacks = null;
+	/**
+	 * Flag used to synchronize access to receiveCallback.
+	 */
 	boolean callbackInUse = false;
 
 	private BufferedInputStream inStream = null;
 	private BufferedOutputStream outStream = null;
 
-	// storage for receive
-	private byte[] data = null;
 	private byte[] sessionkey = null;
 
 	private RemoteConnection remoteConnection = null;
@@ -55,8 +59,10 @@ public class SecureChannel extends Stub {
 			thisThread = Thread.currentThread();
 			while (receiveTrigger == thisThread) {
 				try {
+					// Wait until data is received.
 					data = receive();
 					synchronized (receiveCallbacks) {
+						// Wait until receiveCallbacks is available
 						while (callbackInUse) {
 							try {
 								receiveCallbacks.wait();
@@ -64,17 +70,22 @@ public class SecureChannel extends Stub {
 								e.printStackTrace();
 							}
 						}
+						// obtain lock on callbacks.
 						callbackInUse = true;
+						// Get number of registered callbacks.
 						n = receiveCallbacks.beginBroadcast();
+						// Terminate thread if there are no callbacks.
 						if (n == 0) {
 							setReceivePolling(false);
 						}
 						for (int i = 0; i < n; i++) {
 							Log.d(this.toString(), "broadcasting.. "
 									+ data.length + " bytes");
+							// Broadcast the received data to the callbacks.
 							receiveCallbacks.getBroadcastItem(i).receive(data);
 						}
 						receiveCallbacks.finishBroadcast();
+						// Release lock on callbacks.
 						callbackInUse = false;
 						receiveCallbacks.notify();
 					}
@@ -96,7 +107,6 @@ public class SecureChannel extends Stub {
 	public SecureChannel(final RemoteConnection toRemote) {
 		this.remoteConnection = toRemote;
 		receiveCallbacks = new RemoteCallbackList<IReceiverCallback>();
-		data = new byte[Constants.CHUNK_SIZE];
 	}
 
 	@Override
@@ -109,6 +119,7 @@ public class SecureChannel extends Stub {
 		}
 	}
 
+	// buffer for the header
 	byte incHeader[] = new byte[Constants.HEADER_LENGTH];
 
 	@Override
@@ -121,15 +132,18 @@ public class SecureChannel extends Stub {
 						remoteConnection.getInputStream());
 			}
 
+			// receive all bytes of the header
 			while ((bytesReceived += inStream.read(incHeader, bytesReceived,
 					Constants.HEADER_LENGTH - bytesReceived)) < Constants.HEADER_LENGTH) {
 			}
 
+			// parse the received header --> size of the incoming paket.
 			int paket_size = Integer.parseInt(new String(incHeader, 0,
 					Constants.HEADER_LENGTH));
 			Log.i(this.toString(), "paket size " + paket_size);
 
 			bytesReceived = 0;
+			// array where the incoming data will be stored.
 			byte[] incData = new byte[paket_size];
 			while ((bytesReceived += inStream.read(incData, bytesReceived,
 					paket_size - bytesReceived)) < paket_size) {
@@ -138,6 +152,7 @@ public class SecureChannel extends Stub {
 					"ciphertext: "
 							+ new String(incData, 0, Math.min(incData.length,
 									35)));
+			// decrypt and return the received data
 			byte[] plaintext = AESGCM.SimpleDecrypt(incData, sessionkey);
 			Log.i(this.toString(), "plaintext: "
 					+ new String(plaintext, 0, Math.min(plaintext.length, 35)));
@@ -158,10 +173,12 @@ public class SecureChannel extends Stub {
 	@Override
 	public void registerReceiveHandler(final IReceiverCallback receiver)
 			throws RemoteException {
+		// Done in a thread to avoid blocking while waiting for callbacks.
 		Thread t = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (receiveCallbacks) {
+					// wait until callbacks are available
 					while (callbackInUse) {
 						try {
 							receiveCallbacks.wait();
@@ -169,10 +186,12 @@ public class SecureChannel extends Stub {
 							e.printStackTrace();
 						}
 					}
+					// obtain lock, register callback, release lock.
 					callbackInUse = true;
 					receiveCallbacks.register(receiver);
 					callbackInUse = false;
 					receiveCallbacks.notify();
+					// start receiver-thread
 					setReceivePolling(true);
 				}
 			}
@@ -182,6 +201,7 @@ public class SecureChannel extends Stub {
 
 	@Override
 	public boolean send(final byte[] data) throws RemoteException {
+		boolean result = false;
 		if (remoteConnection != null) {
 			try {
 				if (outStream == null) {
@@ -190,12 +210,13 @@ public class SecureChannel extends Stub {
 							Constants.CHUNK_SIZE);
 				}
 				Log.d(this.toString(), "sending..");
+				// encrypt and send the data.
 				byte[] ciphertext = AESGCM.SimpleEncrypt(data, sessionkey);
-				outStream.write(Util.makeParcel(ciphertext));
+				outStream.write(Util.makePacket(ciphertext));
 				outStream.flush();
+				result = true;
 			} catch (final IOException e) {
 				e.printStackTrace();
-				return false;
 			} catch (IllegalStateException e) {
 				e.printStackTrace();
 			} catch (InvalidCipherTextException e) {
@@ -204,9 +225,15 @@ public class SecureChannel extends Stub {
 				e.printStackTrace();
 			}
 		}
-		return true;
+		return result;
 	}
 
+	/**
+	 * Starts or stops the receiver-thread.
+	 * 
+	 * @param status
+	 *            True to turn the thread on, false otherwise.
+	 */
 	private void setReceivePolling(Boolean status) {
 		if (status) {
 			receiveTrigger = receiveThread;
@@ -214,16 +241,17 @@ public class SecureChannel extends Stub {
 		} else {
 			receiveTrigger = null;
 		}
-
 	}
 
 	@Override
 	public void unregisterReceiveHandler(final IReceiverCallback receiver)
 			throws RemoteException {
+		// Done in a thread to avoid blocking while waiting for callbacks.
 		Thread t = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				synchronized (receiveCallbacks) {
+					// wait until callbacks are available
 					while (callbackInUse) {
 						try {
 							receiveCallbacks.wait();
@@ -231,6 +259,7 @@ public class SecureChannel extends Stub {
 							e.printStackTrace();
 						}
 					}
+					// obtain lock, unregister callback, release lock
 					callbackInUse = true;
 					receiveCallbacks.unregister(receiver);
 					callbackInUse = false;
@@ -241,10 +270,21 @@ public class SecureChannel extends Stub {
 		t.run();
 	}
 
+	/**
+	 * Sets the key to be used for cryptographic operations by this channel
+	 * 
+	 * @param sessionKey
+	 *            The key to be used.
+	 */
 	public void setSessionKey(byte[] sessionKey) {
 		sessionkey = sessionKey;
 	}
 
+	/**
+	 * Closes all opened streams, terminates the receiver-thread.
+	 * 
+	 * @throws IOException
+	 */
 	private void close() throws IOException {
 		if (inStream != null) {
 			inStream.close();

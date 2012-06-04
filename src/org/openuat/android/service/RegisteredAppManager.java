@@ -15,86 +15,72 @@ import java.util.List;
 import org.openuat.android.service.connectiontype.TCP;
 
 /**
- * The Class RegisteredAppManager.
+ * This class contains all applications registered to the service.
  * 
  * 
  * @author Hannes Markschlaeger
  */
 public final class RegisteredAppManager {
 
-    /** The m apps. */
-    private static List<RegisteredApp> mApps = new ArrayList<RegisteredApp>();
+	/**
+	 * The list of registered apps.
+	 */
+	private static List<RegisteredApp> mApps = new ArrayList<RegisteredApp>();
 
-    /**
-     * Instantiates a new registered app manager.
-     */
-    private RegisteredAppManager() {
-    }
+	/**
+	 * Instantiates a new registered app manager.
+	 */
+	private RegisteredAppManager() {
+	}
 
-    /**
-     * Gets the service by name.
-     * 
-     * @param name
-     *            the name
-     * @return the service by name
-     */
-    public static RegisteredApp getServiceByName(final String name) {
-	for (final RegisteredApp s : mApps) {
-	    if (s.getName().equalsIgnoreCase(name)) {
-		return s;
-	    }
+	/**
+	 * Gets the service by name.
+	 * 
+	 * @param name
+	 *            the name
+	 * @return the service by name
+	 */
+	public static RegisteredApp getServiceByName(final String name) {
+		for (final RegisteredApp s : mApps) {
+			if (s.getName().equalsIgnoreCase(name)) {
+				return s;
+			}
+		}
+		return null;
 	}
-	return null;
-    }
 
-    /**
-     * Gets the service of client.
-     * 
-     * @param client
-     *            the client
-     * @return the service of client
-     */
-    public static RegisteredApp getServiceOfClient(final Client client) {
-	for (final RegisteredApp app : mApps) {
-	    if (app.getClients().contains(client)) {
-		return app;
-	    }
+	/**
+	 * Registers a new application. No duplicates will be created.
+	 * 
+	 * @param app
+	 *            the application to register.
+	 */
+	public static void registerService(final RegisteredApp app) {
+		if (!mApps.contains(app)) {
+			mApps.add(app);
+		}
+		switch (app.getConnection()) {
+		case WIFI:
+			TCP.getInstance().addApp(app);
+			break;
+		case BLUETOOTH:
+			break;
+		default:
+			break;
+		}
 	}
-	return null;
-    }
 
-    /**
-     * Register service.
-     * 
-     * @param app
-     *            the app
-     */
-    public static void registerService(final RegisteredApp app) {
-	if (!mApps.contains(app)) {
-	    mApps.add(app);
+	/**
+	 * Unregisters a service
+	 * 
+	 * @param app
+	 *            the application to remove.
+	 */
+	public static void unregisterService(final RegisteredApp app) {
+		if ((app.getNumberOfClients() == 0) && !mApps.contains(app)) {
+			mApps.remove(app);
+			TCP.getInstance().removeApp(app);
+		}
 	}
-	switch (app.getConnection()) {
-	case WIFI:
-	    TCP.getInstance().addApp(app);
-	    break;
-	case BLUETOOTH:
-	    break;
-	default:
-	    break;
-	}
-    }
-
-    /**
-     * Unregister service.
-     * 
-     * @param app
-     *            the app
-     */
-    public static void unregisterService(final RegisteredApp app) {
-	if ((app.getNumberOfClients() == 0) && !mApps.contains(app)) {
-	    mApps.remove(app);
-	    TCP.getInstance().removeApp(app);
-	}
-    }
 
 }

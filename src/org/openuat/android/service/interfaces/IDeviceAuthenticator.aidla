@@ -1,5 +1,13 @@
+/**
+ * Copyright Hannes Markschlaeger
+ * File created 13.03.2012
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version. 
+ */
 package org.openuat.android.service.interfaces;
-
 import org.openuat.android.service.interfaces.ISecureChannel;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 
@@ -19,8 +27,11 @@ interface IDeviceAuthenticator {
 	// TODO: method(s) to localize and display authentication method in applications which 
 	// offer the end-user a selection of methods
 	
-	/** Returns the list of devices currently available for a connection with this service, e.g. via Bluetooth
-	 * or on the local (wireless) network.
+	/** 
+	 * Returns a list of devices currently available for a connection.
+	 * 
+	 * @param _serviceId The identifier of the application of interest.
+	 * @return A list of available devices to connect to.
 	 */
 	String[] getAvailableDevices(String _serviceId);
 
@@ -29,32 +40,36 @@ interface IDeviceAuthenticator {
 	 */	
 	String[] getPairedDevices();
 	
-	//ISecureChannel connect(in String device, in String authenticationMethod);
-	
-	/** Registers the calling application for incoming requests for secure
+	/** 
+	 * Registers the calling application for incoming requests for secure
 	 * communication. 
 	 * It is recommended to either use a UUID in String format or e.g. the unique
 	 * package name of the application for registering the service.
+	 *
+	 * @param serviceId A unique string identifying the application (e.g. the package name)
+	 * @param connectionCallback The interface to be called 
+	 * 	when requested or new SecureChannels are incoming.
 	 */
 	void register(in String serviceId, IConnectionCallback connectionCallback);
 	
-	/** Asks the service to initiate a secure (encrypted and authenticated) 
-	 * connection to a device selected by the user. I.e., the service will ask
-	 * the user to select the appropriate device and perform human-assisted
-	 * device authentication.
-	 *
-	 * On success, an instance of ISecureChannel is returned. 
-	 * On failure, null is returned.
-	 */
-	ISecureChannel selectAndAuthenticate(in String serviceId);
+//	/** Asks the service to initiate a secure (encrypted and authenticated) 
+//	 * connection to a device selected by the user. I.e., the service will ask
+//	 * the user to select the appropriate device and perform human-assisted
+//	 * device authentication.
+//	 *
+//	 * On success, an instance of ISecureChannel is returned. 
+//	 * On failure, null is returned.
+//	 */
+//	ISecureChannel selectAndAuthenticate(in String serviceId);
 
 	/** Asks the service to initiate a secure (encrypted and authenticated) 
 	 * connection to the device and service on this device as specified by
 	 * the parameters. If this device was not previously authenticated, then
 	 * the service will perform human-assisted device authentication.
+	 * Once the connection has been established and verified it will be sent to the IConnectionCallback.
 	 *
-	 * On success, an instance of ISecureChannel is returned. 
-	 * On failure, null is returned.
+	 * @param serviceID The application
+	 * @param device The remote device to connect to. Use only strings returned by getAvailableDevices!
 	 */
 	void authenticate(in String serviceId, in String device);	
 }

@@ -11,23 +11,27 @@ import org.bouncycastle.crypto.params.KeyParameter;
 
 // http://stackoverflow.com/a/10366194
 public class AESGCM {
+	/**
+	 * Used to create IV
+	 */
 	static private final SecureRandom Random = new SecureRandom();
 
 	static public int NonceBitSize = 128;
 	static public int MacBitSize = 128;
 	static public int KeyBitSize = 256;
 
-	// / <summary>
-	// / Simple Encryption And Authentication (AES-GCM) of a UTF8 String.
-	// / </summary>
-	// / <param name="secretMessage">The secret message.</param>
-	// / <param name="key">The key.</param>
-	// / <param name="nonSecretPayload">Optional non-secret payload.</param>
-	// / <returns>Encrypted Message</returns>
-	// / <remarks>
-	// / Adds overhead of (Optional-Payload + BlockSize(16) + Message +
-	// HMac-Tag(16)) * 1.33 Base64
-	// / </remarks>
+	/**
+	 * Simple Encryption And Authentication (AES-GCM) of a byte-array.
+	 * 
+	 * @param secretMessage
+	 *            The byte-array to be encrypted.
+	 * @param key
+	 *            The key to be used.
+	 * @return An encrypted byte-array if successful, null otherwise.
+	 * @throws IllegalStateException
+	 * @throws InvalidCipherTextException
+	 * @throws IllegalArgumentException
+	 */
 	public static byte[] SimpleEncrypt(final byte[] secretMessage,
 			final byte[] key) throws IllegalStateException,
 			InvalidCipherTextException, IllegalArgumentException {
@@ -61,14 +65,18 @@ public class AESGCM {
 		return buffer.array();
 	}
 
-	// / <summary>
-	// / Simple Decryption & Authentication (AES-GCM) of a UTF8 Message
-	// / </summary>
-	// / <param name="encryptedMessage">The encrypted message.</param>
-	// / <param name="key">The key.</param>
-	// / <param name="nonSecretPayloadLength">Length of the optional non-secret
-	// payload.</param>
-	// / <returns>Decrypted Message</returns>
+	/**
+	 * Simple Decryption & Authentication (AES-GCM) of a byte-array.
+	 * 
+	 * @param encryptedMessage
+	 *            The byte array to be decrypted
+	 * @param key
+	 *            The key to be used
+	 * @return The decrypted byte array if successful, null otherwise.
+	 * @throws IllegalStateException
+	 * @throws InvalidCipherTextException
+	 * @throws IllegalArgumentException
+	 */
 	public static byte[] SimpleDecrypt(final byte[] encryptedMessage,
 			final byte[] key) throws IllegalStateException,
 			InvalidCipherTextException, IllegalArgumentException {

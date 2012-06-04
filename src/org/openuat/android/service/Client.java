@@ -17,6 +17,7 @@ import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
+import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.util.Hash;
@@ -24,200 +25,293 @@ import org.openuat.util.Hash;
 import android.os.RemoteException;
 import android.util.Log;
 
+// TODO: Auto-generated Javadoc
 /**
- * The Class Client.
+ * This class represents a client. A client is identified by an
+ * {@link OpenUAT_ID} and has the corresponding remote-connection and streams.
  * 
+ * @author Hannes Markschläger
  * 
- * @author Hannes Markschlaeger
  */
 public class Client {
 
-    private RemoteConnection remote = null;
-    private SecureChannel secureChannel = null;
+	/** The remote-connection. */
+	private RemoteConnection remote = null;
 
-    private boolean isLocalClient = false;
-    private OpenUAT_ID id;
+	/** The secure channel. */
+	private SecureChannel secureChannel = null;
 
-    private byte[] oobKey = null;
+	/**
+	 * Flag indicating that this instance is the local client. Prevents
+	 * publishing this client by
+	 * {@link IDeviceAuthenticator#getAvailableDevices(String)}
+	 */
+	private boolean isLocalClient = false;
 
-    public final OpenUAT_ID getId() {
-	return id;
-    }
+	/**
+	 * The id identifying this client.
+	 */
+	private OpenUAT_ID id;
 
-    public Client() {
-    }
+	/**
+	 * The key used to verify the connection using an out-of-bound channel.
+	 */
+	private byte[] oobKey = null;
 
-    public Client(RemoteConnection adress,
-	    IConnectionCallback connectionCallback) {
-	this();
-	setRemote(adress);
-    }
-
-    /**
-     * @param id
-     */
-    public Client(OpenUAT_ID id) {
-	this();
-	this.id = id;
-    }
-
-    public RemoteConnection getRemoteObject() {
-	return remote;
-    }
-
-    public void establishConnection() throws IOException {
-
-	Log.d(this.toString(), "openConnection");
-	InetAddress adress = TCP.getAvailableClients().get(id);
-	if (secureChannel != null) {
-	    Log.d(this.toString(), "valid channel present");
+	/**
+	 * Gets the {@link OpenUAT_ID} identifying this {@link Client}.
+	 * 
+	 * @return The {@link OpenUAT_ID} of this {@link Client}
+	 */
+	public final OpenUAT_ID getId() {
+		return id;
 	}
-	Log.d(this.toString(), "no channel found - creating new one");
-	RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
-		Constants.TCP_PORT));
-	setRemote(con);
 
-	// TODO
-	DHwithVerificationHelper.getInstance().startAuthentication(
-		getRemoteObject(), Constants.PROTOCOL_TIMEOUT, id.toString());
-    }
+	/**
+	 * Creates a new instance of {@link Client}.
+	 * 
+	 * @param id
+	 *            the {@link OpenUAT_ID} identifying this {@link Client}
+	 */
+	public Client(OpenUAT_ID id) {
+		this.id = id;
+	}
 
-   
+	/**
+	 * Gets the {@link RemoteConnection} of this {@link Client}.
+	 * 
+	 * @return The {@link RemoteConnection}.
+	 */
+	public RemoteConnection getRemoteConnection() {
+		return remote;
+	}
 
-    public void setRemote(final RemoteConnection adress) {
-	this.remote = adress;
-//	checkIfLocal();
-    }
+	/**
+	 * Tries to open a connection to a remote {@link Client}. If there is an
+	 * existing valid connection that one will be used. Otherwise a new
+	 * connection will be established and verified.
+	 * 
+	 * In case of an existing valid connection or a new one has been established
+	 * successfully it can be received by
+	 * 
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 *             {@link IConnectionCallback#connectionIncoming(org.openuat.android.service.interfaces.ISecureChannel, String)}
+	 */
+	public void establishConnection() throws IOException {
 
-    public void setSecureChannel(final SecureChannel channel) throws RemoteException {
-	secureChannel = channel;
-	id.getApp().publishChannel(this);
-    }
+		Log.d(this.toString(), "openConnection");
+		InetAddress adress = TCP.getAvailableClients().get(id);
+		if (secureChannel != null) {
+			// TODO return existing channel
+			Log.d(this.toString(), "valid channel present");
+		}
+		Log.d(this.toString(), "no channel found - creating new one");
+		RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
+				Constants.TCP_PORT));
+		setRemoteConnection(con);
 
-    public final SecureChannel getSecureChannel() {
-	return secureChannel;
-    }
+		// TODO
+		DHwithVerificationHelper.getInstance().startAuthentication(
+				getRemoteConnection(), Constants.PROTOCOL_TIMEOUT,
+				id.toString());
+	}
 
-    public boolean isLocalClient() {
-	return isLocalClient;
-    }
+	/**
+	 * Sets the remote connection.
+	 * 
+	 * @param adress
+	 *            the new remote connection
+	 */
+	public void setRemoteConnection(final RemoteConnection adress) {
+		this.remote = adress;
+	}
 
-    public void reset() throws RemoteException {
-	setRemote(null);
-	setSecureChannel(null);
-    }
+	/**
+	 * Sets the secure channel and publishes it.
+	 * 
+	 * @param channel
+	 *            the new secure channel
+	 * @throws RemoteException
+	 *             the remote exception
+	 */
+	public void setSecureChannel(final SecureChannel channel)
+			throws RemoteException {
+		secureChannel = channel;
+		id.getApp().publishChannel(this);
+	}
 
-    @Override
-    public int hashCode() {
-	final int prime = 31;
-	int result = 1;
-	result = prime * result + ((id == null) ? 0 : id.hashCode());
-	result = prime * result + ((remote == null) ? 0 : remote.hashCode());
-	return result;
-    }
+	/**
+	 * Gets the secure channel.
+	 * 
+	 * @return the secure channel
+	 */
+	public final SecureChannel getSecureChannel() {
+		return secureChannel;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-	if (this == obj)
-	    return true;
-	if (obj == null)
-	    return false;
-	if (!(obj instanceof Client))
-	    return false;
-	Client other = (Client) obj;
-	if (id == null) {
-	    if (other.id != null)
-		return false;
-	} else if (!id.equals(other.id))
-	    return false;
-	if (remote == null) {
-	    if (other.remote != null)
-		return false;
-	} else if (!remote.equals(other.remote))
-	    return false;
-	return true;
-    }
+	/**
+	 * Flag indicating that this instance is the local client. Prevents
+	 * publishing this client by
+	 * {@link IDeviceAuthenticator#getAvailableDevices(String)}
+	 * 
+	 * @return true if this is a local {@link Client}, false otherwise.
+	 */
+	public boolean isLocalClient() {
+		return isLocalClient;
+	}
 
-    @Override
-    public String toString() {
-	return id.toString();
-    }
-
-    private volatile Thread verificationTrigger = null;
-    private final Thread verificationThread = new Thread(new Runnable() {
-	Thread thisThread = null;
-
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
 	@Override
-	public void run() {
-	    thisThread = Thread.currentThread();
-	    while (verificationTrigger == thisThread) {
-		if (DiscoverService.oob_key != null) {
-		    boolean result = DiscoverService.oob_key
-			    .equalsIgnoreCase(Hash.getHexString(oobKey));
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((remote == null) ? 0 : remote.hashCode());
+		return result;
+	}
 
-		    if (result) {
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof Client))
+			return false;
+		Client other = (Client) obj;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		if (remote == null) {
+			if (other.remote != null)
+				return false;
+		} else if (!remote.equals(other.remote))
+			return false;
+		return true;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return id.toString();
+	}
+
+	/** The verification trigger. */
+	private volatile Thread verificationTrigger = null;
+
+	/**
+	 * Using this thread is necessary due to restrictions and the design concept
+	 * of android. The verification is done in a different activity.
+	 * 
+	 * 
+	 */
+	private final Thread verificationThread = new Thread(new Runnable() {
+		static final int POLLING_BREAK = 250;
+		Thread thisThread = null;
+
+		@Override
+		public void run() {
+			thisThread = Thread.currentThread();
+			while (verificationTrigger == thisThread) {
+				if (DiscoverService.oob_key != null) {
+					boolean result = DiscoverService.oob_key
+							.equalsIgnoreCase(Hash.getHexString(oobKey));
+
+					if (result) {
+						verificationTrigger = null;
+						try {
+							DHwithVerificationHelper.getInstance()
+									.verificationSuccess(remote, this,
+											getId().toString());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} else {
+						try {
+							DHwithVerificationHelper
+									.getInstance()
+									.verificationFailure(true, remote, this,
+											getId().toString(),
+											new Exception(), "invalid OOB code");
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					DiscoverService.oob_key = null;
+					verificationTrigger = null;
+				}
+				try {
+					Thread.sleep(POLLING_BREAK);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+
+		}
+	});
+
+	/**
+	 * Start verification.
+	 * 
+	 * @param sharedAuthenticationKey
+	 *            the shared authentication key
+	 */
+	public void startVerification() {
+		setVerificationPolling(true);
+	}
+
+	/**
+	 * Sets the verification polling.
+	 * 
+	 * @param status
+	 *            the new verification polling
+	 */
+	private void setVerificationPolling(Boolean status) {
+		if (status) {
+			verificationTrigger = verificationThread;
+			verificationThread.start();
+		} else {
 			verificationTrigger = null;
-			try {
-			    DHwithVerificationHelper.getInstance()
-				    .verificationSuccess(remote, this,
-					    getId().toString());
-			} catch (IOException e) {
-			    e.printStackTrace();
-			}
-		    } else {
-			try {
-			    DHwithVerificationHelper
-				    .getInstance()
-				    .verificationFailure(true, remote, this,
-					    getId().toString(),
-					    new Exception(), "invalid OOB code");
-			} catch (IOException e) {
-			    e.printStackTrace();
-			}
-		    }
-		    DiscoverService.oob_key = null;
-		    verificationTrigger = null;
 		}
-		try {
-		    Thread.sleep(Constants.POLLING_INTERVALL);
-		} catch (InterruptedException e) {
-		    e.printStackTrace();
-		}
-	    }
-
 	}
-    });
 
-    public void startVerification(byte[] sharedAuthenticationKey) {
-	oobKey = sharedAuthenticationKey;
-	setVerificationPolling(true);
-    }
-
-    private void setVerificationPolling(Boolean status) {
-	if (status) {
-	    verificationTrigger = verificationThread;
-	    verificationThread.start();
-	} else {
-	    verificationTrigger = null;
+	/**
+	 * Sets the oob key.
+	 * 
+	 * @param sharedAuthenticationKey
+	 *            the new oob key
+	 */
+	public void setOobKey(byte[] sharedAuthenticationKey) {
+		oobKey = sharedAuthenticationKey;
 	}
-    }
 
-    /**
-     * @param sharedAuthenticationKey
-     */
-    public void setOobKey(byte[] sharedAuthenticationKey) {
-	oobKey = sharedAuthenticationKey;
-    }
-
-    /**
-     * @param localId
-     * @return
-     */
-    public static Client createLocalClient(OpenUAT_ID localId) {
-	Client client = new Client();
-	client.id = localId;
-	client.isLocalClient = true;
-	return client;
-    }
+	/**
+	 * Creates the local client.
+	 * 
+	 * @param localId
+	 *            The {@link OpenUAT_ID} of the local client.
+	 * @return An instance of {@link Client} which is marked as local client.
+	 */
+	public static Client createLocalClient(OpenUAT_ID localId) {
+		Client client = new Client(localId);
+		client.isLocalClient = true;
+		return client;
+	}
 
 }
