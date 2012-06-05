@@ -90,6 +90,7 @@ public class VerificationQR extends Activity {
 				Log.i("scanresult", key);
 			}
 			client.checkKeys(key);
+			finish();
 //			DiscoverService.oob_key = key;
 		}
 
