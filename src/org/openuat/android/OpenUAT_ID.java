@@ -10,7 +10,7 @@ package org.openuat.android;
 
 import org.openuat.android.service.RegisteredApp;
 import org.openuat.android.service.RegisteredAppManager;
-import org.openuat.android.service.connectiontype.IConnectionType.CONNECTION_TYPE;
+import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.authentication.exceptions.InternalApplicationException;
 import org.openuat.util.Hash;
 
@@ -24,7 +24,6 @@ import org.openuat.util.Hash;
  */
 public class OpenUAT_ID {
 
-	private CONNECTION_TYPE connection_type;
 	private RegisteredApp app = null;
 	private String androidId = null;
 	private String hash = null;
@@ -39,9 +38,7 @@ public class OpenUAT_ID {
 	 * @param androidId
 	 *            The android-id of the device.
 	 */
-	public OpenUAT_ID(CONNECTION_TYPE connection_type, RegisteredApp app,
-			String androidId) {
-		this.connection_type = connection_type;
+	public OpenUAT_ID(RegisteredApp app, String androidId) {
 		this.app = app;
 		this.androidId = androidId;
 		hash = getHash();
@@ -50,8 +47,8 @@ public class OpenUAT_ID {
 	public String getHash() {
 		if (hash == null) {
 			try {
-				hash = Hash.getHexString(Hash.SHA256(toString().getBytes(),
-						true));
+				hash = Hash.getHexString(Hash
+						.SHA256(toToken().getBytes(), true));
 			} catch (InternalApplicationException e) {
 				e.printStackTrace();
 			}
@@ -78,26 +75,23 @@ public class OpenUAT_ID {
 
 		int index = 0;
 		String androidId = tokens[index++];
-		RegisteredApp app = RegisteredAppManager
-				.getServiceByName(tokens[index++]);
-		CONNECTION_TYPE connection_type = CONNECTION_TYPE
-				.valueOf(tokens[index++]);
+		RegisteredApp app = RegisteredAppManager.getServiceByNameAndConnType(
+				tokens[index++],
+				IConnectionType.CONNECTION_TYPE.valueOf(tokens[index++]));
 
-		if (androidId == "" || app == null || connection_type == null) {
+		if (androidId == "" || app == null) {
 			return null;
 		}
-		return new OpenUAT_ID(connection_type, app, androidId);
+		return new OpenUAT_ID(app, androidId);
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder strb = new StringBuilder();
-		strb.append(androidId);
-		strb.append("_");
-		strb.append(app.toString());
-		strb.append("_");
-		strb.append(connection_type.toString());
-		return strb.toString();
+		return androidId + ", " + app.toString();
+	}
+
+	public String toToken() {
+		return androidId + "_" + app.toToken();
 	}
 
 	/**
@@ -116,8 +110,6 @@ public class OpenUAT_ID {
 		result = prime * result
 				+ ((androidId == null) ? 0 : androidId.hashCode());
 		result = prime * result + ((app == null) ? 0 : app.hashCode());
-		result = prime * result
-				+ ((connection_type == null) ? 0 : connection_type.hashCode());
 		return result;
 	}
 
@@ -139,8 +131,6 @@ public class OpenUAT_ID {
 			if (other.app != null)
 				return false;
 		} else if (!app.equals(other.app))
-			return false;
-		if (connection_type != other.connection_type)
 			return false;
 		return true;
 	}

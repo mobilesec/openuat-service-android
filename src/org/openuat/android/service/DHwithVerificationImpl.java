@@ -13,6 +13,7 @@ import java.io.IOException;
 import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.dialogs.VerificationQR;
+import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.authentication.DHWithVerification;
 import org.openuat.channel.main.RemoteConnection;
 import org.openuat.channel.main.ip.TCPPortServer;
@@ -32,39 +33,39 @@ import android.util.Log;
  * @author Hannes Markschläger
  * 
  */
-public class DHwithVerificationHelper extends DHWithVerification {
+public class DHwithVerificationImpl extends DHWithVerification {
 
 	/**
 	 * Flag to enable verification using QR-codes. Set false to verify new
 	 * connections immediately.
 	 */
 	private static final boolean ENABLE_QRVERIFICATION = true;
-	private static DHwithVerificationHelper instance = null;
+	private static DHwithVerificationImpl instance = null;
 
 	/**
-	 * Gets an instance of {@link DHwithVerificationHelper}. Starts listening
-	 * for incoming connections.
+	 * Gets an instance of {@link DHwithVerificationImpl}. Starts listening for
+	 * incoming connections.
 	 * 
 	 * @return
 	 * @throws IOException
 	 */
-	public static DHwithVerificationHelper getInstance() throws IOException {
-		if (DHwithVerificationHelper.instance == null) {
-			DHwithVerificationHelper.instance = new DHwithVerificationHelper();
+	public static DHwithVerificationImpl getInstance() throws IOException {
+		if (DHwithVerificationImpl.instance == null) {
+			DHwithVerificationImpl.instance = new DHwithVerificationImpl();
 			instance.startListening();
 		}
-		return DHwithVerificationHelper.instance;
+		return DHwithVerificationImpl.instance;
 	}
 
 	/**
 	 * Private constructor. Creates a new instance.
-	 * {@link DHwithVerificationHelper}.
+	 * {@link DHwithVerificationImpl}.
 	 */
-	private DHwithVerificationHelper() {
+	private DHwithVerificationImpl() {
 		super(new TCPPortServer(Constants.TCP_PORT, Constants.PROTOCOL_TIMEOUT,
 				Constants.KEEP_CONNECTED, Constants.USE_JSSE), true, true,
 				true, null, Constants.USE_JSSE);
-		Log.i(this.toString(), "DHwithVerificationHelper");
+		Log.i(this.toString(), "DHwithVerificationImpl");
 	}
 
 	@Override
@@ -73,14 +74,21 @@ public class DHwithVerificationHelper extends DHWithVerification {
 
 		// incoming connection: start scan-procedure - verificationSuccess -
 		// wait for success from remote
-
 		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
-		Client c = id.getApp().getClientById(id);
+		Client c = null;
 		// If the requesting client passed as optionalParameter is a local
 		// client a notification containing an activity to show a QR-code
 		// representation of the
 		// sharedAuthenticationKey will be started.
-		if (c != null && !id.getApp().getLocalId().equals(id)) {
+		if (id.getApp().getLocalId().equals(id)) {
+			try {
+				c = IConnectionType.getClientByRemote(toRemote);
+			} catch (IOException e) {
+				e.printStackTrace();
+				verificationFailure(true, toRemote, null, id.toToken(),
+						new Exception(), "error");
+				return;
+			}
 			c.setOobKey(sharedAuthenticationKey);
 
 			// Create an intent starting a new activity to show the QR-code.
@@ -97,12 +105,12 @@ public class DHwithVerificationHelper extends DHWithVerification {
 			// Create a PendingIntent out of the previously created intent to be
 			// able to attach it to the notification.
 			PendingIntent pendingIntent = PendingIntent.getActivity(
-					DiscoverService.context, 0, intent,
+					OpenUATService.context, 0, intent,
 					PendingIntent.FLAG_CANCEL_CURRENT
 							| PendingIntent.FLAG_ONE_SHOT);
 
 			// Attach the pending intent.
-			notif.setLatestEventInfo(DiscoverService.context,
+			notif.setLatestEventInfo(OpenUATService.context,
 					"OpenUAT - Opening connection",
 					"This code has to be verified by the other side",
 					pendingIntent);
@@ -111,14 +119,14 @@ public class DHwithVerificationHelper extends DHWithVerification {
 
 			// Publish the notification.
 			if (ENABLE_QRVERIFICATION) {
-				DiscoverService.mNotificationManager.notify(
+				OpenUATService.mNotificationManager.notify(
 						Constants.NOTIF_VERIFICATION_CHALLENGE, notif);
 			}
 
 			// Due to this is the local client - and verification will be done
 			// by
 			// the remote client - the code can be verified immediately.
-			verificationSuccess(toRemote, c, id.toString());
+			verificationSuccess(toRemote, c, id.toToken());
 			return;
 		}
 
@@ -127,6 +135,7 @@ public class DHwithVerificationHelper extends DHWithVerification {
 
 		// If the Client does not exist locally it has to be created and added
 		// to the according application.
+		c = id.getApp().getClientById(id);
 		if (c == null) {
 			c = new Client(id);
 			id.getApp().addClient(c);
@@ -144,13 +153,12 @@ public class DHwithVerificationHelper extends DHWithVerification {
 		}
 
 		// Create an intent to start the scan-activity.
-		Intent intent = new Intent(DiscoverService.context,
-				VerificationQR.class);
+		Intent intent = new Intent(OpenUATService.context, VerificationQR.class);
 		intent.putExtra(VerificationQR.CLIENT_EXTRA, c.getId().toString());
 
 		// Create a PendingIntent out of the intent created before.
 		PendingIntent pendingIntent = PendingIntent.getActivity(
-				DiscoverService.context, 0, intent, PendingIntent.FLAG_ONE_SHOT
+				OpenUATService.context, 0, intent, PendingIntent.FLAG_ONE_SHOT
 						| PendingIntent.FLAG_CANCEL_CURRENT);
 
 		// Create a new notification.
@@ -158,14 +166,14 @@ public class DHwithVerificationHelper extends DHWithVerification {
 				"verfication required", System.currentTimeMillis());
 
 		// Attach the pendingIntent.
-		notif.setLatestEventInfo(DiscoverService.context,
+		notif.setLatestEventInfo(OpenUATService.context,
 				"OpenUAT - Incoming connection",
 				"Please verify the connection", pendingIntent);
 		notif.flags = Notification.FLAG_NO_CLEAR
 				| Notification.FLAG_AUTO_CANCEL;
 
 		// Publish the notification.
-		DiscoverService.mNotificationManager.notify(
+		OpenUATService.mNotificationManager.notify(
 				Constants.NOTIF_VERIFICATION_RESPONSE, notif);
 
 		// Start the verification thread and set the oob-key

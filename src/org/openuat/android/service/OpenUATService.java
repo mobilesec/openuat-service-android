@@ -27,20 +27,20 @@ import android.os.RemoteException;
 import android.util.Log;
 
 /**
- * The Class DiscoverService.
+ * The Class OpenUATService.
  * 
  * 
  * @author Hannes Markschlaeger
  */
-public class DiscoverService extends Service {
+public class OpenUATService extends Service {
 	public static Context context = null;
 	public static NotificationManager mNotificationManager;
 	public static String oob_key = null;
 
-	public DiscoverService() {
-		Log.i("DiscoverService", "ctor");
+	public OpenUATService() {
+		Log.i("OpenUATService", "ctor");
 		try {
-			DHwithVerificationHelper.getInstance();
+			DHwithVerificationImpl.getInstance();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -67,8 +67,9 @@ public class DiscoverService extends Service {
 		public String[] getAvailableDevices(final String serviceId)
 				throws RemoteException {
 			Log.i(this.toString(), " getDevices");
-			final List<Client> list = RegisteredAppManager.getServiceByName(
-					serviceId).getClients();
+			final List<Client> list = RegisteredAppManager
+					.getServiceByNameAndConnType(serviceId,
+							IConnectionType.CONNECTION_TYPE.WIFI).getClients();
 			final List<String> result = new ArrayList<String>(list.size());
 
 			for (final Client c : list) {
@@ -101,7 +102,8 @@ public class DiscoverService extends Service {
 			}
 
 			RegisteredApp app = RegisteredAppManager
-					.getServiceByName(serviceId);
+					.getServiceByNameAndConnType(serviceId,
+							IConnectionType.CONNECTION_TYPE.WIFI);
 			if (app == null) {
 				app = new RegisteredApp(serviceId,
 						IConnectionType.CONNECTION_TYPE.WIFI);

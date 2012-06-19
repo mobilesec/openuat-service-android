@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.openuat.android.Constants;
@@ -26,14 +25,16 @@ import org.openuat.channel.main.ip.UDPMulticastSocket;
 
 import android.util.Log;
 
+import com.google.common.collect.HashBiMap;
+
 /**
  * The Class TCP.
  * 
  * 
  * @author Hannes Markschlaeger
  */
-public final class TCP implements IConnectionType, MessageListener {
-
+public final class TCP extends IConnectionType implements MessageListener {
+	protected HashBiMap<OpenUAT_ID, InetAddress> availableClients = null;
 	/** The m discover runnable. */
 	private static Runnable mDiscoverRunnable = new Runnable() {
 
@@ -74,8 +75,6 @@ public final class TCP implements IConnectionType, MessageListener {
 	/** The m udp multi sock. */
 	private static UDPMulticastSocket mUdpMultiSock = null;
 
-	private static HashMap<OpenUAT_ID, InetAddress> availableClients = null;
-
 	/**
 	 * Gets the single instance of TCP.
 	 * 
@@ -96,7 +95,7 @@ public final class TCP implements IConnectionType, MessageListener {
 	 */
 	private TCP() {
 		try {
-			availableClients = new HashMap<OpenUAT_ID, InetAddress>();
+			availableClients = HashBiMap.create();
 			TCP.mUdpMultiSock = new UDPMulticastSocket(Constants.UDP_PORT,
 					Constants.UDP_PORT, "255.255.255.255");
 			TCP.mUdpMultiSock.addIncomingMessageListener(this);
@@ -111,14 +110,6 @@ public final class TCP implements IConnectionType, MessageListener {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.openuat.android.service.connectiontype.IConnectionType#addApp(org
-	 * .openuat.android.service.RegisteredApp)
-	 */
-	@Override
 	public void addApp(final RegisteredApp app) {
 		if (!TCP.mServices.contains(app)) {
 			TCP.mServices.add(app);
@@ -168,7 +159,7 @@ public final class TCP implements IConnectionType, MessageListener {
 					for (RegisteredApp app : TCP.mServices) {
 						if (app.getName().equalsIgnoreCase(recApp)) {
 							TCP.mUdpMultiSock
-									.sendTo((app.getLocalId().toString()
+									.sendTo((app.getLocalId().toToken()
 											+ Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
 											.getBytes(), sentFrom);
 						}
@@ -191,22 +182,9 @@ public final class TCP implements IConnectionType, MessageListener {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.openuat.android.service.connectiontype.IConnectionType#removeApp(
-	 * org.openuat.android.service.RegisteredApp)
-	 */
-	@Override
 	public void removeApp(final RegisteredApp app) {
 		if (TCP.mServices.contains(app) && (app.getNumberOfClients() == 0)) {
 			TCP.mServices.remove(app);
 		}
 	}
-
-	public static final HashMap<OpenUAT_ID, InetAddress> getAvailableClients() {
-		return availableClients;
-	}
-
 }

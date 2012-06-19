@@ -18,9 +18,9 @@
     <application
         android:icon="@drawable/ic_launcher"
         android:label="appname" >
-        <service android:name=".service.DiscoverService" >
+        <service android:name=".service.OpenUATService" >
             <intent-filter>
-                <action android:name="org.openuat.android.service.DiscoverService" />
+                <action android:name="org.openuat.android.service.OpenUATService" />
             </intent-filter>
         </service>
 

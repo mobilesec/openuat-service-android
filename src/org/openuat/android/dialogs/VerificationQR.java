@@ -10,7 +10,7 @@ package org.openuat.android.dialogs;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.Client;
-import org.openuat.android.service.DiscoverService;
+import org.openuat.android.service.OpenUATService;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -55,7 +55,8 @@ public class VerificationQR extends Activity {
 				.setCancelable(false)
 				.setIcon(android.R.drawable.ic_dialog_info)
 				.setMessage(
-						"Incoming Connection from [insert requesting IP.\nAccept?")
+						"Incoming Connection from " + id.toString()
+								+ "\nAccept?")
 				.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
 					@Override
@@ -70,7 +71,7 @@ public class VerificationQR extends Activity {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						dialog.cancel();
-						DiscoverService.oob_key = "fail";
+						OpenUATService.oob_key = "fail";
 						VerificationQR.this.finish();
 					}
 				});
@@ -91,7 +92,7 @@ public class VerificationQR extends Activity {
 			}
 			client.checkKeys(key);
 			finish();
-//			DiscoverService.oob_key = key;
+			// OpenUATService.oob_key = key;
 		}
 
 	}
@@ -103,6 +104,6 @@ public class VerificationQR extends Activity {
 	 */
 	@Override
 	public void onBackPressed() {
-		DiscoverService.oob_key = "back";
+		OpenUATService.oob_key = "back";
 	}
 }

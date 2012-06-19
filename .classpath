@@ -7,6 +7,6 @@
 	<classpathentry exported="true" kind="lib" path="libs/openuat-core.jar" sourcepath="C:/Users/Hannes/SkyDrive/Documents/FH/Sem5/OpenUAT/openuat/dist/releases/0.11/openuat-0.11-src.zip"/>
 	<classpathentry exported="true" kind="lib" path="libs/slf4j-android-1.6.1-RC1.jar" sourcepath="libs/slf4j-android-1.6.1-RC1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/zxing.jar"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry exported="true" kind="lib" path="libs/guava-12.0.jar" sourcepath="C:/Users/Hannes/.sourceattacher/guava-12.0-sources.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

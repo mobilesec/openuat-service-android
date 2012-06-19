@@ -63,7 +63,7 @@ public class Util {
 		Inet4Address localhost = null;
 		try {
 			localhost = (Inet4Address) InetAddress.getByName(Formatter
-					.formatIpAddress(((WifiManager) DiscoverService.context
+					.formatIpAddress(((WifiManager) OpenUATService.context
 							.getSystemService("wifi")).getConnectionInfo()
 							.getIpAddress()));
 			Log.i("localhost: ", localhost.toString());

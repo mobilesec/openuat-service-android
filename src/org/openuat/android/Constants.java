@@ -63,4 +63,6 @@ public final class Constants {
 	public static final int PROTOCOL_TIMEOUT = -1;
 	public static final boolean KEEP_CONNECTED = true;
 	
+	public static final String TOKEN_SEPARATOR = "<PAIR>";
+	
 }

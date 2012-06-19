@@ -12,6 +12,7 @@ package org.openuat.android.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openuat.android.service.connectiontype.IConnectionType.CONNECTION_TYPE;
 import org.openuat.android.service.connectiontype.TCP;
 
 /**
@@ -40,9 +41,11 @@ public final class RegisteredAppManager {
 	 *            the name
 	 * @return the service by name
 	 */
-	public static RegisteredApp getServiceByName(final String name) {
+	public static RegisteredApp getServiceByNameAndConnType(final String name,
+			final CONNECTION_TYPE connectionType) {
 		for (final RegisteredApp s : mApps) {
-			if (s.getName().equalsIgnoreCase(name)) {
+			if (s.getName().equalsIgnoreCase(name)
+					&& s.getConnection() == connectionType) {
 				return s;
 			}
 		}

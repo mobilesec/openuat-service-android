@@ -10,16 +10,13 @@
 package org.openuat.android.service;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
 
 import org.openuat.android.Constants;
 import org.openuat.android.OpenUAT_ID;
-import org.openuat.android.service.connectiontype.TCP;
+import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 import org.openuat.channel.main.RemoteConnection;
-import org.openuat.channel.main.ip.RemoteTCPConnection;
 import org.openuat.util.Hash;
 
 import android.os.RemoteException;
@@ -97,26 +94,27 @@ public class Client {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 *             {@link IConnectionCallback#connectionIncoming(org.openuat.android.service.interfaces.ISecureChannel, String)}
-	 * @see DHwithVerificationHelper#startAuthentication(RemoteConnection, int,
+	 * @see DHwithVerificationImpl#startAuthentication(RemoteConnection, int,
 	 *      String)
 	 */
 	public void establishConnection() throws IOException {
 
 		Log.d(this.toString(), "openConnection");
-		InetAddress adress = TCP.getAvailableClients().get(id);
 		if (secureChannel != null) {
 			// TODO return existing channel
 			Log.d(this.toString(), "valid channel present");
 		}
 		Log.d(this.toString(), "no channel found - creating new one");
-		RemoteTCPConnection con = new RemoteTCPConnection(new Socket(adress,
-				Constants.TCP_PORT));
-		setRemoteConnection(con);
+		setRemoteConnection(IConnectionType.newConnection(id));
 
 		// TODO
-		DHwithVerificationHelper.getInstance().startAuthentication(
-				getRemoteConnection(), Constants.PROTOCOL_TIMEOUT,
-				id.toString());
+		DHwithVerificationImpl.getInstance().startAuthentication(remote,
+				Constants.PROTOCOL_TIMEOUT, id.getApp().getLocalId().toToken());
+		// String token = id.toString() + Constants.TOKEN_SEPARATOR
+		// + id.getApp().getLocalId().toString();
+		//
+		// DHwithVerificationImpl.getInstance().startAuthentication(
+		// getRemoteConnection(), Constants.PROTOCOL_TIMEOUT, token);
 	}
 
 	/**
@@ -212,7 +210,7 @@ public class Client {
 	 */
 	@Override
 	public String toString() {
-		return id.toString();
+		return id.toToken();
 	}
 
 	/**
@@ -247,9 +245,9 @@ public class Client {
 	 * @param key
 	 *            The key to be compared with the stored one.
 	 * @see {@link #checkKeys(String)}
-	 * @see DHwithVerificationHelper#verificationSuccess(RemoteConnection,
-	 *      Object, String)
-	 * @see DHwithVerificationHelper#verificationFailure(boolean,
+	 * @see DHwithVerificationImpl#verificationSuccess(RemoteConnection, Object,
+	 *      String)
+	 * @see DHwithVerificationImpl#verificationFailure(boolean,
 	 *      RemoteConnection, Object, String, Exception, String)
 	 */
 	public void checkKeys(String key) {
@@ -257,15 +255,15 @@ public class Client {
 
 		if (result) {
 			try {
-				DHwithVerificationHelper.getInstance().verificationSuccess(
-						remote, this, getId().toString());
+				DHwithVerificationImpl.getInstance().verificationSuccess(
+						remote, this, id.getApp().getLocalId().toToken());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
-				DHwithVerificationHelper.getInstance().verificationFailure(
-						true, remote, this, getId().toString(),
+				DHwithVerificationImpl.getInstance().verificationFailure(true,
+						remote, this, id.getApp().getLocalId().toToken(),
 						new Exception(), "invalid OOB code");
 			} catch (IOException e) {
 				e.printStackTrace();

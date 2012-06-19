@@ -9,12 +9,14 @@
  */
 package org.openuat.android.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.ISecureChannel;
+import org.openuat.channel.main.RemoteConnection;
 
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
@@ -64,9 +66,8 @@ public class RegisteredApp {
 		mConnection = connection;
 		connectionCallbacks = new RemoteCallbackList<IConnectionCallback>();
 
-		localClient = Client.createLocalClient(new OpenUAT_ID(mConnection,
-				this, Secure.getString(
-						DiscoverService.context.getContentResolver(),
+		localClient = Client.createLocalClient(new OpenUAT_ID(this, Secure
+				.getString(OpenUATService.context.getContentResolver(),
 						Secure.ANDROID_ID)));
 		addClient(localClient);
 	}
@@ -160,7 +161,7 @@ public class RegisteredApp {
 
 	@Override
 	public String toString() {
-		return mName;
+		return mName + ", " + mConnection.toString();
 	}
 
 	/*
@@ -202,6 +203,11 @@ public class RegisteredApp {
 		return true;
 	}
 
+	public String toToken() {
+		// TODO move separator to constants
+		return mName + "_" + mConnection.toString();
+	}
+
 	/**
 	 * Gets the local client.
 	 * 
@@ -236,7 +242,7 @@ public class RegisteredApp {
 			for (int i = 0; i < n; i++) {
 				Log.i(this.toString(), "TROLOLO");
 				connectionCallbacks.getBroadcastItem(i).connectionIncoming(
-						client.getSecureChannel(), client.getId().toString());
+						client.getSecureChannel(), client.getId().toToken());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -260,4 +266,9 @@ public class RegisteredApp {
 		return id;
 	}
 
+	public Client getClientByRemote(RemoteConnection toRemote)
+			throws IOException {
+		OpenUAT_ID id = IConnectionType.getIdByRemote(toRemote);
+		return id.getApp().getClientById(id);
+	}
 }

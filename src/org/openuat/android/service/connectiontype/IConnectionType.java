@@ -9,7 +9,15 @@
  */
 package org.openuat.android.service.connectiontype;
 
+import java.io.IOException;
+import java.net.Socket;
+
+import org.openuat.android.Constants;
+import org.openuat.android.OpenUAT_ID;
+import org.openuat.android.service.Client;
 import org.openuat.android.service.RegisteredApp;
+import org.openuat.channel.main.RemoteConnection;
+import org.openuat.channel.main.ip.RemoteTCPConnection;
 
 /**
  * The Interface IConnectionType.
@@ -17,37 +25,80 @@ import org.openuat.android.service.RegisteredApp;
  * 
  * @author Hannes Markschlaeger
  */
-public interface IConnectionType {
+public abstract class IConnectionType {
 
-    /**
-     * The Enum CONNECTION_TYPE.
-     * 
-     * 
-     * @author Hannes Markschlaeger
-     */
-    public static enum CONNECTION_TYPE {
+	/**
+	 * The Enum CONNECTION_TYPE.
+	 * 
+	 * 
+	 * @author Hannes Markschlaeger
+	 */
+	public static enum CONNECTION_TYPE {
 
-	/** The BLUETOOTH. */
-	BLUETOOTH,
-	/** The WIFI. */
-	WIFI
-    };
-    
-    @Override
-    public String toString();
-    /**
-     * Adds the app.
-     * 
-     * @param app
-     *            the app
-     */
-    void addApp(RegisteredApp app);
+		/** The BLUETOOTH. */
+		BLUETOOTH,
+		/** The WIFI. */
+		WIFI
+	};
 
-    /**
-     * Removes the app.
-     * 
-     * @param app
-     *            the app
-     */
-    void removeApp(RegisteredApp app);
+	/**
+	 * Adds the app.
+	 * 
+	 * @param app
+	 *            the app
+	 */
+	public static void addRegisteredApp(RegisteredApp app) {
+		switch (app.getConnection()) {
+		case WIFI:
+			TCP.getInstance().addApp(app);
+			break;
+		}
+	}
+
+	protected abstract void addApp(RegisteredApp app);
+
+	/**
+	 * Removes the app.
+	 * 
+	 * @param app
+	 *            the app
+	 */
+	public static void removeRegisteredApp(RegisteredApp app) {
+		switch (app.getConnection()) {
+		case WIFI:
+			TCP.getInstance().removeApp(app);
+			break;
+		}
+	}
+
+	protected abstract void removeApp(RegisteredApp app);
+
+	public static RemoteConnection newConnection(OpenUAT_ID id)
+			throws IOException {
+		switch (id.getApp().getConnection()) {
+		case WIFI:
+			return new RemoteTCPConnection(new Socket(
+					TCP.getInstance().availableClients.get(id),
+					Constants.TCP_PORT));
+		}
+		return null;
+	}
+
+	public static OpenUAT_ID getIdByRemote(RemoteConnection remote)
+			throws IOException {
+		if (remote instanceof RemoteTCPConnection) {
+			return TCP.getInstance().availableClients.inverse().get(remote);
+		}
+		return null;
+	}
+
+	public static Client getClientByRemote(RemoteConnection remote)
+			throws IOException {
+		OpenUAT_ID id = getIdByRemote(remote);
+		if (id == null) {
+			return null;
+		}
+
+		return id.getApp().getClientById(id);
+	}
 }
