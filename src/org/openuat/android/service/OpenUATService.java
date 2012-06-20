@@ -53,7 +53,7 @@ public class OpenUATService extends Service {
 				throws RemoteException {
 			Log.i(this.toString(), "authenticate" + device);
 
-			OpenUAT_ID id = OpenUAT_ID.parseToken(device);
+			OpenUAT_ID id = OpenUAT_ID.deserialize(device);
 
 			Client c = id.getApp().getClientById(id);
 			try {

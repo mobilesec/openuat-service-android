@@ -203,11 +203,6 @@ public class RegisteredApp {
 		return true;
 	}
 
-	public String toToken() {
-		// TODO move separator to constants
-		return mName + "_" + mConnection.toString();
-	}
-
 	/**
 	 * Gets the local client.
 	 * 
@@ -242,7 +237,7 @@ public class RegisteredApp {
 			for (int i = 0; i < n; i++) {
 				Log.i(this.toString(), "TROLOLO");
 				connectionCallbacks.getBroadcastItem(i).connectionIncoming(
-						client.getSecureChannel(), client.getId().toToken());
+						client.getSecureChannel(), client.getId().serialize());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -260,6 +255,7 @@ public class RegisteredApp {
 	 */
 	public OpenUAT_ID getLocalId() {
 		OpenUAT_ID id = null;
+		// can't be null anyway?
 		if (localClient != null) {
 			id = localClient.getId();
 		}

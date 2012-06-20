@@ -74,7 +74,7 @@ public class DHwithVerificationImpl extends DHWithVerification {
 
 		// incoming connection: start scan-procedure - verificationSuccess -
 		// wait for success from remote
-		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParam);
+		OpenUAT_ID id = OpenUAT_ID.deserialize(optionalParam);
 		Client c = null;
 		// If the requesting client passed as optionalParameter is a local
 		// client a notification containing an activity to show a QR-code
@@ -85,7 +85,7 @@ public class DHwithVerificationImpl extends DHWithVerification {
 				c = IConnectionType.getClientByRemote(toRemote);
 			} catch (IOException e) {
 				e.printStackTrace();
-				verificationFailure(true, toRemote, null, id.toToken(),
+				verificationFailure(true, toRemote, null, id.serialize(),
 						new Exception(), "error");
 				return;
 			}
@@ -126,7 +126,7 @@ public class DHwithVerificationImpl extends DHWithVerification {
 			// Due to this is the local client - and verification will be done
 			// by
 			// the remote client - the code can be verified immediately.
-			verificationSuccess(toRemote, c, id.toToken());
+			verificationSuccess(toRemote, c, id.serialize());
 			return;
 		}
 
@@ -154,7 +154,7 @@ public class DHwithVerificationImpl extends DHWithVerification {
 
 		// Create an intent to start the scan-activity.
 		Intent intent = new Intent(OpenUATService.context, VerificationQR.class);
-		intent.putExtra(VerificationQR.CLIENT_EXTRA, c.getId().toString());
+		intent.putExtra(VerificationQR.CLIENT_EXTRA, c.getId().serialize());
 
 		// Create a PendingIntent out of the intent created before.
 		PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -198,7 +198,7 @@ public class DHwithVerificationImpl extends DHWithVerification {
 
 		// If the verification has been successful a new SecureChannel will be
 		// created and sent to the clients.
-		OpenUAT_ID id = OpenUAT_ID.parseToken(optionalParameterFromRemote);
+		OpenUAT_ID id = OpenUAT_ID.deserialize(optionalParameterFromRemote);
 		Client client = id.getApp().getClientById(id);
 		SecureChannel channel = new SecureChannel(remote);
 		channel.setSessionKey(sharedSessionKey);

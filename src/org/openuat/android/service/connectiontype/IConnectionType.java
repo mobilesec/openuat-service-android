@@ -87,7 +87,8 @@ public abstract class IConnectionType {
 	public static OpenUAT_ID getIdByRemote(RemoteConnection remote)
 			throws IOException {
 		if (remote instanceof RemoteTCPConnection) {
-			return TCP.getInstance().availableClients.inverse().get(remote);
+			return TCP.getInstance().availableClients.inverse().get(
+					remote.getRemoteAddress());
 		}
 		return null;
 	}

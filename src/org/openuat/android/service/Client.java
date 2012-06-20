@@ -109,7 +109,7 @@ public class Client {
 
 		// TODO
 		DHwithVerificationImpl.getInstance().startAuthentication(remote,
-				Constants.PROTOCOL_TIMEOUT, id.getApp().getLocalId().toToken());
+				Constants.PROTOCOL_TIMEOUT, id.getApp().getLocalId().serialize());
 		// String token = id.toString() + Constants.TOKEN_SEPARATOR
 		// + id.getApp().getLocalId().toString();
 		//
@@ -210,7 +210,7 @@ public class Client {
 	 */
 	@Override
 	public String toString() {
-		return id.toToken();
+		return id.serialize();
 	}
 
 	/**
@@ -256,14 +256,14 @@ public class Client {
 		if (result) {
 			try {
 				DHwithVerificationImpl.getInstance().verificationSuccess(
-						remote, this, id.getApp().getLocalId().toToken());
+						remote, this, id.getApp().getLocalId().serialize());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
 				DHwithVerificationImpl.getInstance().verificationFailure(true,
-						remote, this, id.getApp().getLocalId().toToken(),
+						remote, this, id.getApp().getLocalId().serialize(),
 						new Exception(), "invalid OOB code");
 			} catch (IOException e) {
 				e.printStackTrace();

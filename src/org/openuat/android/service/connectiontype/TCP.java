@@ -146,20 +146,21 @@ public final class TCP extends IConnectionType implements MessageListener {
 				return;
 			}
 
-			final String recApp = received[0];
-			final String recControl = received[1];
+			final String payload = received[0];
+			final String command = received[1];
 
-			if (recApp.length() <= 0 || recControl.length() <= 0) {
+			if (payload == null || payload.length() == 0 || command == null
+					|| command.length() == 0) {
 				Log.i("UDP received", "Message not correct!");
 				return;
 			}
 
-			if (recControl.equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
+			if (command.equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
 				try {
 					for (RegisteredApp app : TCP.mServices) {
-						if (app.getName().equalsIgnoreCase(recApp)) {
+						if (app.getName().equalsIgnoreCase(payload)) {
 							TCP.mUdpMultiSock
-									.sendTo((app.getLocalId().toToken()
+									.sendTo((app.getLocalId().serialize()
 											+ Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
 											.getBytes(), sentFrom);
 						}
@@ -167,8 +168,8 @@ public final class TCP extends IConnectionType implements MessageListener {
 				} catch (final IOException e) {
 					e.printStackTrace();
 				}
-			} else if (recControl.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
-				OpenUAT_ID id = OpenUAT_ID.parseToken(recApp);
+			} else if (command.equalsIgnoreCase(Constants.DISCOVER_RESPOND)) {
+				OpenUAT_ID id = OpenUAT_ID.deserialize(payload);
 				RegisteredApp app = id.getApp();
 				Client client = id.getApp().getClientById(id);
 				if (client == null) {

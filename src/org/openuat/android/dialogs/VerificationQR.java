@@ -37,7 +37,7 @@ public class VerificationQR extends Activity {
 			finish();
 			return;
 		}
-		OpenUAT_ID id = OpenUAT_ID.parseToken(str);
+		OpenUAT_ID id = OpenUAT_ID.deserialize(str);
 		if (id == null) {
 			Log.e(this.toString(), "ID parsing failed!");
 			finish();
