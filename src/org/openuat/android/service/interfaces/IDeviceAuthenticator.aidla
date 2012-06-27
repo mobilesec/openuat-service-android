@@ -16,17 +16,7 @@ import org.openuat.android.service.interfaces.IConnectionCallback;
  * devices over any supported communication channel (e.g. WLAN, Bluetooth, or
  * XMPP). 
  */
-interface IDeviceAuthenticator {
-	/** Returns a list of authentication methods currently supported by this service instance.
-	 * The returned set of strings should be taken verbatim when selecting one of them for
-	 * a specific device authentication protocol run, and should not be modified or interpreted
-	 * by the application. 
-	 */ 
-	String[] getSupportedAuthenticationMethods();
-	
-	// TODO: method(s) to localize and display authentication method in applications which 
-	// offer the end-user a selection of methods
-	
+interface IDeviceAuthenticator {	
 	/** 
 	 * Returns a list of devices currently available for a connection.
 	 * 
@@ -34,11 +24,6 @@ interface IDeviceAuthenticator {
 	 * @return A list of available devices to connect to.
 	 */
 	String[] getAvailableDevices(String _serviceId);
-
-	/** Returns the list of devices that the local one already holds a shared key with, i.e. those 
-	 * that were already authenticated in the past.
-	 */	
-	String[] getPairedDevices();
 	
 	/** 
 	 * Registers the calling application for incoming requests for secure
@@ -51,16 +36,6 @@ interface IDeviceAuthenticator {
 	 * 	when requested or new SecureChannels are incoming.
 	 */
 	void register(in String serviceId, IConnectionCallback connectionCallback);
-	
-//	/** Asks the service to initiate a secure (encrypted and authenticated) 
-//	 * connection to a device selected by the user. I.e., the service will ask
-//	 * the user to select the appropriate device and perform human-assisted
-//	 * device authentication.
-//	 *
-//	 * On success, an instance of ISecureChannel is returned. 
-//	 * On failure, null is returned.
-//	 */
-//	ISecureChannel selectAndAuthenticate(in String serviceId);
 
 	/** Asks the service to initiate a secure (encrypted and authenticated) 
 	 * connection to the device and service on this device as specified by

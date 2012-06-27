@@ -109,6 +109,11 @@ public class OpenUAT_ID {
 		return app;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -119,25 +124,37 @@ public class OpenUAT_ID {
 		return result;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (!(obj instanceof OpenUAT_ID))
+		}
+		if (!(obj instanceof OpenUAT_ID)) {
 			return false;
+		}
 		OpenUAT_ID other = (OpenUAT_ID) obj;
 		if (androidId == null) {
-			if (other.androidId != null)
+			if (other.androidId != null) {
 				return false;
-		} else if (!androidId.equals(other.androidId))
+			}
+		} else if (!androidId.equals(other.androidId)) {
 			return false;
+		}
 		if (app == null) {
-			if (other.app != null)
+			if (other.app != null) {
 				return false;
-		} else if (!app.equals(other.app))
+			}
+		} else if (!app.equals(other.app)) {
 			return false;
+		}
 		return true;
 	}
 

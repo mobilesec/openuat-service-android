@@ -8,8 +8,6 @@
  */
 package org.openuat.android;
 
-import java.nio.charset.Charset;
-
 public final class Constants {
 	public static final int NOTIF_VERIFICATION_CHALLENGE = 100;
 	public static final int NOTIF_VERIFICATION_RESPONSE = 101;
@@ -64,7 +62,5 @@ public final class Constants {
 	public static final boolean USE_JSSE = true;
 	public static final int PROTOCOL_TIMEOUT = -1;
 	public static final boolean KEEP_CONNECTED = true;
-	
-	public static final String TOKEN_SEPARATOR = "<PAIR>";
 	
 }

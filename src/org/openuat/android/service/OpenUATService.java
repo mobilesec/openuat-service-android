@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.openuat.android.OpenUAT_ID;
 import org.openuat.android.service.connectiontype.IConnectionType;
+import org.openuat.android.service.connectiontype.TCP;
 import org.openuat.android.service.interfaces.IConnectionCallback;
 import org.openuat.android.service.interfaces.IDeviceAuthenticator;
 
@@ -53,14 +54,23 @@ public class OpenUATService extends Service {
 				throws RemoteException {
 			Log.i(this.toString(), "authenticate" + device);
 
-			OpenUAT_ID id = OpenUAT_ID.deserialize(device);
+			final OpenUAT_ID id = OpenUAT_ID.deserialize(device);
 
-			Client c = id.getApp().getClientById(id);
-			try {
-				c.establishConnection();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			Thread t = new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					Client c = id.getApp().getClientById(id);
+					try {
+						c.establishConnection();
+					} catch (RemoteException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			t.start();
 		}
 
 		@Override
@@ -79,17 +89,6 @@ public class OpenUATService extends Service {
 				Log.i(this.toString(), c.toString());
 			}
 			return result.toArray(new String[result.size()]);
-		}
-
-		@Override
-		public String[] getPairedDevices() throws RemoteException {
-			return null;
-		}
-
-		@Override
-		public String[] getSupportedAuthenticationMethods()
-				throws RemoteException {
-			return null;
 		}
 
 		@Override
@@ -127,5 +126,10 @@ public class OpenUATService extends Service {
 		context = getApplicationContext();
 		mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		return deviceAuthenticator;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
 	}
 }

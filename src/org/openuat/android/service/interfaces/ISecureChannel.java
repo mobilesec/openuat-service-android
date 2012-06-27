@@ -3,6 +3,7 @@
  * Original file: C:\\Users\\Hannes\\SkyDrive\\Documents\\FH\\Sem5\\OpenUAT\\openuat-service-android\\src\\org\\openuat\\android\\service\\interfaces\\ISecureChannel.aidl
  */
 package org.openuat.android.service.interfaces;
+
 @SuppressWarnings("all")
 /**
  * This interface enables communication with a remote object. If you register a

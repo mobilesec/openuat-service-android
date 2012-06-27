@@ -3,6 +3,7 @@
  * Original file: C:\\Users\\Hannes\\SkyDrive\\Documents\\FH\\Sem5\\OpenUAT\\openuat-service-android\\src\\org\\openuat\\android\\service\\interfaces\\IReceiverCallback.aidl
  */
 package org.openuat.android.service.interfaces;
+
 @SuppressWarnings("all")
 public interface IReceiverCallback extends android.os.IInterface {
 	/** Local-side IPC implementation stub class. */

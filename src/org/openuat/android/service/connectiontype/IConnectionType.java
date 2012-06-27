@@ -42,10 +42,11 @@ public abstract class IConnectionType {
 	};
 
 	/**
-	 * Adds the app.
+	 * Adds a {@link RegisteredApp} to its fitting instance of
+	 * {@link IConnectionType}.
 	 * 
 	 * @param app
-	 *            the app
+	 *            the {@link RegisteredApp} to add.
 	 */
 	public static void addRegisteredApp(RegisteredApp app) {
 		switch (app.getConnection()) {
@@ -55,13 +56,20 @@ public abstract class IConnectionType {
 		}
 	}
 
+	/**
+	 * Adds a {@link RegisteredApp} to this instance of {@link IConnectionType}
+	 * 
+	 * @param app
+	 *            The {@link RegisteredApp} to add.
+	 */
 	protected abstract void addApp(RegisteredApp app);
 
 	/**
-	 * Removes the app.
+	 * Removes a {@link RegisteredApp} from its fitting instance of
+	 * {@link IConnectionType}
 	 * 
 	 * @param app
-	 *            the app
+	 *            the {@link RegisteredApp} to add.
 	 */
 	public static void removeRegisteredApp(RegisteredApp app) {
 		switch (app.getConnection()) {
@@ -71,6 +79,13 @@ public abstract class IConnectionType {
 		}
 	}
 
+	/**
+	 * Removes a {@link RegisteredApp} from this instance of
+	 * {@link IConnectionType}.
+	 * 
+	 * @param app
+	 *            The {@link RegisteredApp} to remove.
+	 */
 	protected abstract void removeApp(RegisteredApp app);
 
 	public static RemoteConnection newConnection(OpenUAT_ID id)
@@ -84,8 +99,21 @@ public abstract class IConnectionType {
 		return null;
 	}
 
+	/**
+	 * Tries to get the {@link OpenUAT_ID} according to the given
+	 * {@link RemoteConnection}.
+	 * 
+	 * @param remote
+	 *            The {@link RemoteConnection} where the {@link OpenUAT_ID} has
+	 *            to be found for.
+	 * @return The {@link OpenUAT_ID} mapped to the given
+	 *         {@link RemoteConnection} or <code>null</code> if it could not be
+	 *         found.
+	 * @throws IOException
+	 */
 	public static OpenUAT_ID getIdByRemote(RemoteConnection remote)
 			throws IOException {
+		// WiFi?
 		if (remote instanceof RemoteTCPConnection) {
 			return TCP.getInstance().availableClients.inverse().get(
 					remote.getRemoteAddress());
@@ -93,6 +121,18 @@ public abstract class IConnectionType {
 		return null;
 	}
 
+	/**
+	 * Tries to get the {@link Client} according to the given
+	 * {@link RemoteConnection}.
+	 * 
+	 * @param remote
+	 *            The {@link RemoteConnection} where the {@link Client} has to
+	 *            be found for.
+	 * @return The {@link Client} mapped to the given {@link RemoteConnection}
+	 *         or <code>null</code> if nothing could be found.
+	 * @throws IOException
+	 * @see {@link IConnectionType#getIdByRemote(RemoteConnection)}
+	 */
 	public static Client getClientByRemote(RemoteConnection remote)
 			throws IOException {
 		OpenUAT_ID id = getIdByRemote(remote);

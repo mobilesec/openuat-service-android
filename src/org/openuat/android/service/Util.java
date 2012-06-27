@@ -15,7 +15,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 
 import org.openuat.android.Constants;
-
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
 import android.util.Log;

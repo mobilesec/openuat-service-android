@@ -94,27 +94,23 @@ public class Client {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 *             {@link IConnectionCallback#connectionIncoming(org.openuat.android.service.interfaces.ISecureChannel, String)}
+	 * @throws RemoteException 
 	 * @see DHwithVerificationImpl#startAuthentication(RemoteConnection, int,
 	 *      String)
 	 */
-	public void establishConnection() throws IOException {
+	public void establishConnection() throws IOException, RemoteException {
 
 		Log.d(this.toString(), "openConnection");
 		if (secureChannel != null) {
 			// TODO return existing channel
 			Log.d(this.toString(), "valid channel present");
+			id.getApp().publishChannel(this);
+			return;
 		}
-		Log.d(this.toString(), "no channel found - creating new one");
 		setRemoteConnection(IConnectionType.newConnection(id));
 
-		// TODO
 		DHwithVerificationImpl.getInstance().startAuthentication(remote,
 				Constants.PROTOCOL_TIMEOUT, id.getApp().getLocalId().serialize());
-		// String token = id.toString() + Constants.TOKEN_SEPARATOR
-		// + id.getApp().getLocalId().toString();
-		//
-		// DHwithVerificationImpl.getInstance().startAuthentication(
-		// getRemoteConnection(), Constants.PROTOCOL_TIMEOUT, token);
 	}
 
 	/**

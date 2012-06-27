@@ -28,8 +28,8 @@ import android.util.Log;
 import com.google.common.collect.HashBiMap;
 
 /**
- * The Class TCP.
- * 
+ * The Class TCP, used for discovering mutable instances of {@link Client} on
+ * the local WLAN.
  * 
  * @author Hannes Markschlaeger
  */
@@ -87,11 +87,11 @@ public final class TCP extends IConnectionType implements MessageListener {
 		return TCP.mInstance;
 	}
 
-	/** The m local ip. */
+	/** The local IP. */
 	private InetAddress mLocalIp = null;
 
 	/**
-	 * Instantiates a new tCP.
+	 * Instantiates a new TCP-object.
 	 */
 	private TCP() {
 		try {
@@ -110,6 +110,7 @@ public final class TCP extends IConnectionType implements MessageListener {
 		}
 	}
 
+	@Override
 	public void addApp(final RegisteredApp app) {
 		if (!TCP.mServices.contains(app)) {
 			TCP.mServices.add(app);
@@ -183,9 +184,11 @@ public final class TCP extends IConnectionType implements MessageListener {
 		}
 	}
 
+	@Override
 	public void removeApp(final RegisteredApp app) {
 		if (TCP.mServices.contains(app) && (app.getNumberOfClients() == 0)) {
 			TCP.mServices.remove(app);
 		}
 	}
+	
 }

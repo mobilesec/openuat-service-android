@@ -164,45 +164,6 @@ public class RegisteredApp {
 		return mName + ", " + mConnection.toString();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#hashCode()
-	 */
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result
-				+ ((mConnection == null) ? 0 : mConnection.hashCode());
-		result = prime * result + ((mName == null) ? 0 : mName.hashCode());
-		return result;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (!(obj instanceof RegisteredApp))
-			return false;
-		RegisteredApp other = (RegisteredApp) obj;
-		if (mConnection != other.mConnection)
-			return false;
-		if (mName == null) {
-			if (other.mName != null)
-				return false;
-		} else if (!mName.equals(other.mName))
-			return false;
-		return true;
-	}
-
 	/**
 	 * Gets the local client.
 	 * 
@@ -228,14 +189,12 @@ public class RegisteredApp {
 	 * 
 	 * @param client
 	 */
-	public synchronized void publishChannel(Client client)
-			throws RemoteException {
+	public void publishChannel(Client client) throws RemoteException {
 		Log.i(this.toString(), "publishing channel: " + client.toString());
 
 		try {
 			int n = connectionCallbacks.beginBroadcast();
 			for (int i = 0; i < n; i++) {
-				Log.i(this.toString(), "TROLOLO");
 				connectionCallbacks.getBroadcastItem(i).connectionIncoming(
 						client.getSecureChannel(), client.getId().serialize());
 			}
@@ -266,5 +225,50 @@ public class RegisteredApp {
 			throws IOException {
 		OpenUAT_ID id = IConnectionType.getIdByRemote(toRemote);
 		return id.getApp().getClientById(id);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((mConnection == null) ? 0 : mConnection.hashCode());
+		result = prime * result + ((mName == null) ? 0 : mName.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof RegisteredApp)) {
+			return false;
+		}
+		RegisteredApp other = (RegisteredApp) obj;
+		if (mConnection != other.mConnection) {
+			return false;
+		}
+		if (mName == null) {
+			if (other.mName != null) {
+				return false;
+			}
+		} else if (!mName.equals(other.mName)) {
+			return false;
+		}
+		return true;
 	}
 }
