@@ -35,19 +35,20 @@ import com.google.common.collect.HashBiMap;
  */
 public final class TCP extends IConnectionType implements MessageListener {
 	protected HashBiMap<OpenUAT_ID, InetAddress> availableClients = null;
-	/** The m discover runnable. */
-	private static Runnable mDiscoverRunnable = new Runnable() {
+
+	private volatile Thread mDiscoverTrigger = null;
+	private final Runnable mDiscoverRunnable = new Runnable() {
+		Thread thisThread = null;
 
 		@Override
 		public void run() {
-			final Thread thisThread = Thread.currentThread();
+			thisThread = Thread.currentThread();
 			Log.i(this.toString(), "thread started");
-
-			while (thisThread == TCP.mDiscoverThread) {
+			while (thisThread == mDiscoverTrigger) {
 				try {
-					for (final RegisteredApp service : TCP.mServices) {
+					for (final RegisteredApp service : mServices) {
 						if (service.isDiscovering()) {
-							TCP.mUdpMultiSock
+							mUdpMultiSock
 									.sendMulticast((service.getName()
 											+ Constants.SEPERATOR + Constants.DISCOVER_CHALLENGE)
 											.getBytes());
@@ -63,17 +64,14 @@ public final class TCP extends IConnectionType implements MessageListener {
 		}
 	};
 
-	/** The m discover thread. */
-	private static Thread mDiscoverThread = null;
-
 	/** The m instance. */
 	private static TCP mInstance = null;
 
 	/** The m services. */
-	private static List<RegisteredApp> mServices = null;
+	private List<RegisteredApp> mServices = null;
 
 	/** The m udp multi sock. */
-	private static UDPMulticastSocket mUdpMultiSock = null;
+	private UDPMulticastSocket mUdpMultiSock = null;
 
 	/**
 	 * Gets the single instance of TCP.
@@ -96,14 +94,12 @@ public final class TCP extends IConnectionType implements MessageListener {
 	private TCP() {
 		try {
 			availableClients = HashBiMap.create();
-			TCP.mUdpMultiSock = new UDPMulticastSocket(Constants.UDP_PORT,
+			mUdpMultiSock = new UDPMulticastSocket(Constants.UDP_PORT,
 					Constants.UDP_PORT, "255.255.255.255");
-			TCP.mUdpMultiSock.addIncomingMessageListener(this);
-			TCP.mUdpMultiSock.startListening();
-			TCP.mServices = new ArrayList<RegisteredApp>();
+			mUdpMultiSock.addIncomingMessageListener(this);
+			mUdpMultiSock.startListening();
+			mServices = new ArrayList<RegisteredApp>();
 			mLocalIp = Util.getipAddress();
-			TCP.mDiscoverThread = new Thread(TCP.mDiscoverRunnable);
-			TCP.mDiscoverThread.start();
 			Log.i(this.toString(), "start discovering");
 		} catch (final IOException e) {
 			e.printStackTrace();
@@ -112,8 +108,8 @@ public final class TCP extends IConnectionType implements MessageListener {
 
 	@Override
 	public void addApp(final RegisteredApp app) {
-		if (!TCP.mServices.contains(app)) {
-			TCP.mServices.add(app);
+		if (!mServices.contains(app)) {
+			mServices.add(app);
 		}
 	}
 
@@ -158,9 +154,9 @@ public final class TCP extends IConnectionType implements MessageListener {
 
 			if (command.equalsIgnoreCase(Constants.DISCOVER_CHALLENGE)) {
 				try {
-					for (RegisteredApp app : TCP.mServices) {
+					for (RegisteredApp app : mServices) {
 						if (app.getName().equalsIgnoreCase(payload)) {
-							TCP.mUdpMultiSock
+							mUdpMultiSock
 									.sendTo((app.getLocalId().serialize()
 											+ Constants.SEPERATOR + Constants.DISCOVER_RESPOND)
 											.getBytes(), sentFrom);
@@ -186,9 +182,22 @@ public final class TCP extends IConnectionType implements MessageListener {
 
 	@Override
 	public void removeApp(final RegisteredApp app) {
-		if (TCP.mServices.contains(app) && (app.getNumberOfClients() == 0)) {
-			TCP.mServices.remove(app);
+		if (mServices.contains(app) && (app.getNumberOfClients() == 0)) {
+			mServices.remove(app);
 		}
 	}
-	
+
+	@Override
+	protected void close() {
+		mDiscoverTrigger = null;
+	}
+
+	@Override
+	protected void open() {
+		if (mDiscoverTrigger == null) {
+			mDiscoverTrigger = new Thread(mDiscoverRunnable);
+			mDiscoverTrigger.start();
+		}
+	}
+
 }

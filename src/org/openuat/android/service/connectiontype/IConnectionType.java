@@ -142,4 +142,16 @@ public abstract class IConnectionType {
 
 		return id.getApp().getClientById(id);
 	}
+
+	public static void shutdown() {
+		TCP.getInstance().close();
+	}
+	
+	public static void start() {
+		TCP.getInstance().open();
+	}
+	
+	protected abstract void close();
+	protected abstract void open();
+	
 }

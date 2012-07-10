@@ -48,6 +48,7 @@ public class SecureChannel extends Stub {
 
 	private RemoteConnection remoteConnection = null;
 
+	// TODO change receiveThread to Runnable!
 	private volatile Thread receiveTrigger = null;
 	private final Thread receiveThread = new Thread(new Runnable() {
 		private byte[] data = null;

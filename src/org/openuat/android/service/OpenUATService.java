@@ -40,11 +40,6 @@ public class OpenUATService extends Service {
 
 	public OpenUATService() {
 		Log.i("OpenUATService", "ctor");
-		try {
-			DHwithVerificationImpl.getInstance();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	/** The device authenticator. */
@@ -95,7 +90,7 @@ public class OpenUATService extends Service {
 		public void register(final String serviceId,
 				IConnectionCallback connectionCallback) throws RemoteException {
 
-			if (serviceId == null || serviceId.isEmpty()) {
+			if (serviceId == null || serviceId.length() == 0) {
 				Log.e(this.toString(), "invalid serviceId");
 				throw new RemoteException();
 			}
@@ -123,13 +118,25 @@ public class OpenUATService extends Service {
 	@Override
 	public final IBinder onBind(final Intent arg0) {
 		Log.i(this.toString(), "binded");
+		return deviceAuthenticator;
+	}
+
+	@Override
+	public void onCreate() {
+		super.onCreate();
 		context = getApplicationContext();
 		mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-		return deviceAuthenticator;
+		IConnectionType.start();
+		try {
+			DHwithVerificationImpl.getInstance();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		IConnectionType.shutdown();
 	}
 }
